@@ -358,7 +358,7 @@ const HelpPage = () => {
           </Typography>
           
           <Typography variant="body2" paragraph>
-            The app supports multiple languages. Change language in Settings > Appearance.
+            The app supports multiple languages. Change language in Settings- Appearance.
           </Typography>
           
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
