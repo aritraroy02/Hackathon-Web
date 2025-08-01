@@ -1,0 +1,39 @@
+{
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "eject": "react-scripts eject",
+    "analyze": "npm run build && npx bundlesize",
+    "lighthouse": "npm run build && npx lighthouse http://localhost:3000 --output html --output-path ./lighthouse-report.html",
+    "pwa-audit": "npm run build && npx pwa-asset-generator",
+    "serve": "npm run build && npx serve -s build"
+  },
+  "bundlesize": [
+    {
+      "path": "./build/static/js/*.js",
+      "maxSize": "500kb"
+    },
+    {
+      "path": "./build/static/css/*.css",
+      "maxSize": "50kb"
+    }
+  ],
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!src/index.js",
+      "!src/serviceWorker.js",
+      "!src/setupTests.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
+  }
+}

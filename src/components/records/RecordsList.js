@@ -1,0 +1,656 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Avatar,
+  Chip,
+  Button,
+  TextField,
+  InputAdornment,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  Alert,
+  Fab,
+  Menu,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  Person as PersonIcon,
+  Visibility as ViewIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Add as AddIcon,
+  FilterList as FilterIcon,
+  CloudOff as OfflineIcon,
+  CloudDone as SyncedIcon,
+  Schedule as PendingIcon,
+  GetApp as ExportIcon,
+  MoreVert as MoreIcon
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useAppContext } from '../../contexts/AppContext';
+import { getAllRecords, deleteRecord } from '../../utils/database';
+
+const RecordsList = () => {
+  const navigate = useNavigate();
+  const { state, dispatch, showNotification } = useAppContext();
+  
+  const [records, setRecords] = useState([]);
+  const [filteredRecords, setFilteredRecords] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [moreAnchorEl, setMoreAnchorEl] = useState(null);
+  const [filters, setFilters] = useState({
+    syncStatus: 'all', // 'all', 'synced', 'pending', 'offline'
+    dateRange: 'all', // 'all', 'today', 'week', 'month'
+    ageGroup: 'all' // 'all', 'infant', 'toddler', 'child', 'teen'
+  });
+
+  // Load records on component mount
+  useEffect(() => {
+    loadRecords();
+  }, []);
+
+  // Filter records when search term or filters change
+  useEffect(() => {
+    filterRecords();
+  }, [records, searchTerm, filters]);
+
+  const loadRecords = async () => {
+    try {
+      const allRecords = await getAllRecords();
+      setRecords(allRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+    } catch (error) {
+      console.error('Failed to load records:', error);
+      showNotification('Failed to load records', 'error');
+    }
+  };
+
+  const filterRecords = () => {
+    let filtered = records;
+
+    // Text search
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(record =>
+        record.childName?.toLowerCase().includes(term) ||
+        record.guardianName?.toLowerCase().includes(term) ||
+        record.healthId?.toLowerCase().includes(term)
+      );
+    }
+
+    // Sync status filter
+    if (filters.syncStatus !== 'all') {
+      filtered = filtered.filter(record => {
+        switch (filters.syncStatus) {
+          case 'synced':
+            return record.synced === true;
+          case 'pending':
+            return record.synced === false && state.isOnline;
+          case 'offline':
+            return record.synced === false && !state.isOnline;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Date range filter
+    if (filters.dateRange !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter(record => {
+        const recordDate = new Date(record.timestamp);
+        switch (filters.dateRange) {
+          case 'today':
+            return recordDate.toDateString() === now.toDateString();
+          case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return recordDate >= weekAgo;
+          case 'month':
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            return recordDate >= monthAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Age group filter
+    if (filters.ageGroup !== 'all') {
+      filtered = filtered.filter(record => {
+        const age = parseFloat(record.age);
+        switch (filters.ageGroup) {
+          case 'infant':
+            return age < 2;
+          case 'toddler':
+            return age >= 2 && age < 5;
+          case 'child':
+            return age >= 5 && age < 13;
+          case 'teen':
+            return age >= 13;
+          default:
+            return true;
+        }
+      });
+    }
+
+    setFilteredRecords(filtered);
+  };
+
+  const handleViewRecord = (record) => {
+    setSelectedRecord(record);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDeleteClick = (record) => {
+    setRecordToDelete(record);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!recordToDelete) return;
+
+    try {
+      await deleteRecord(recordToDelete.id);
+      dispatch({ type: 'DELETE_RECORD', payload: recordToDelete.id });
+      
+      // Remove from local state
+      setRecords(prev => prev.filter(r => r.id !== recordToDelete.id));
+      
+      showNotification('Record deleted successfully', 'success');
+      setIsDeleteDialogOpen(false);
+      setRecordToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete record:', error);
+      showNotification('Failed to delete record', 'error');
+    }
+  };
+
+  const getSyncStatusIcon = (record) => {
+    if (record.synced) {
+      return <SyncedIcon color="success" />;
+    } else if (state.isOnline) {
+      return <PendingIcon color="warning" />;
+    } else {
+      return <OfflineIcon color="error" />;
+    }
+  };
+
+  const getSyncStatusText = (record) => {
+    if (record.synced) {
+      return 'Synced';
+    } else if (state.isOnline) {
+      return 'Pending Sync';
+    } else {
+      return 'Offline';
+    }
+  };
+
+  const getSyncStatusColor = (record) => {
+    if (record.synced) {
+      return 'success';
+    } else if (state.isOnline) {
+      return 'warning';
+    } else {
+      return 'error';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const getAgeGroup = (age) => {
+    const ageNum = parseFloat(age);
+    if (ageNum < 2) return 'Infant';
+    if (ageNum < 5) return 'Toddler';
+    if (ageNum < 13) return 'Child';
+    return 'Teen';
+  };
+
+  const handleExport = () => {
+    try {
+      const dataToExport = filteredRecords.map(record => ({
+        healthId: record.healthId,
+        childName: record.childName,
+        age: record.age,
+        weight: record.weight,
+        height: record.height,
+        guardianName: record.guardianName,
+        malnutritionSigns: record.malnutritionSigns?.join(', ') || '',
+        recentIllnesses: record.recentIllnesses || '',
+        timestamp: record.timestamp,
+        synced: record.synced
+      }));
+
+      const csvContent = convertToCSV(dataToExport);
+      downloadCSV(csvContent, `child_health_records_${new Date().toISOString().split('T')[0]}.csv`);
+      
+      showNotification('Records exported successfully', 'success');
+    } catch (error) {
+      console.error('Export failed:', error);
+      showNotification('Failed to export records', 'error');
+    }
+  };
+
+  const convertToCSV = (data) => {
+    if (data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]);
+    const csvHeaders = headers.join(',');
+    
+    const csvRows = data.map(row => 
+      headers.map(header => {
+        const value = row[header];
+        // Escape commas and quotes in CSV
+        return typeof value === 'string' && (value.includes(',') || value.includes('"'))
+          ? `"${value.replace(/"/g, '""')}"`
+          : value;
+      }).join(',')
+    );
+
+    return [csvHeaders, ...csvRows].join('\n');
+  };
+
+  const downloadCSV = (content, filename) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  return (
+    <Box sx={{ pb: 10 }}>
+      {/* Header with Search and Filters */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              Health Records ({filteredRecords.length})
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <IconButton
+                onClick={(e) => setFilterAnchorEl(e.currentTarget)}
+                title="Filter Records"
+              >
+                <FilterIcon />
+              </IconButton>
+              
+              <IconButton
+                onClick={(e) => setMoreAnchorEl(e.currentTarget)}
+                title="More Options"
+              >
+                <MoreIcon />
+              </IconButton>
+            </Box>
+          </Box>
+
+          <TextField
+            fullWidth
+            placeholder="Search by child name, guardian, or Health ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          {/* Active Filters Display */}
+          {(filters.syncStatus !== 'all' || filters.dateRange !== 'all' || filters.ageGroup !== 'all') && (
+            <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+              {filters.syncStatus !== 'all' && (
+                <Chip
+                  label={`Sync: ${filters.syncStatus}`}
+                  onDelete={() => setFilters(prev => ({ ...prev, syncStatus: 'all' }))}
+                  size="small"
+                />
+              )}
+              {filters.dateRange !== 'all' && (
+                <Chip
+                  label={`Date: ${filters.dateRange}`}
+                  onDelete={() => setFilters(prev => ({ ...prev, dateRange: 'all' }))}
+                  size="small"
+                />
+              )}
+              {filters.ageGroup !== 'all' && (
+                <Chip
+                  label={`Age: ${filters.ageGroup}`}
+                  onDelete={() => setFilters(prev => ({ ...prev, ageGroup: 'all' }))}
+                  size="small"
+                />
+              )}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Records List */}
+      {filteredRecords.length === 0 ? (
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 6 }}>
+            <PersonIcon sx={{ fontSize: 64, color: 'grey.300', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No Records Found
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              {searchTerm || Object.values(filters).some(f => f !== 'all')
+                ? 'No records match your search criteria.'
+                : 'Start by adding your first child health record.'
+              }
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => navigate('/form')}
+              startIcon={<AddIcon />}
+            >
+              Add First Record
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <List sx={{ p: 0 }}>
+          {filteredRecords.map((record) => (
+            <Card key={record.id} sx={{ mb: 1 }}>
+              <ListItem alignItems="flex-start">
+                <ListItemAvatar>
+                  {record.photo ? (
+                    <Avatar
+                      src={record.photo}
+                      alt={record.childName}
+                      sx={{ width: 56, height: 56 }}
+                    />
+                  ) : (
+                    <Avatar sx={{ width: 56, height: 56, bgcolor: 'primary.main' }}>
+                      <PersonIcon />
+                    </Avatar>
+                  )}
+                </ListItemAvatar>
+                
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="h6" component="div">
+                        {record.childName}
+                      </Typography>
+                      <Chip
+                        icon={getSyncStatusIcon(record)}
+                        label={getSyncStatusText(record)}
+                        size="small"
+                        color={getSyncStatusColor(record)}
+                        variant="outlined"
+                      />
+                    </Box>
+                  }
+                  secondary={
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Health ID: {record.healthId} • Age: {record.age} years ({getAgeGroup(record.age)})
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Guardian: {record.guardianName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Weight: {record.weight} kg • Height: {record.height} cm
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Recorded: {formatDate(record.timestamp)}
+                      </Typography>
+                    </Box>
+                  }
+                />
+                
+                <ListItemSecondaryAction>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <IconButton
+                      edge="end"
+                      onClick={() => handleViewRecord(record)}
+                      title="View Details"
+                      size="small"
+                    >
+                      <ViewIcon />
+                    </IconButton>
+                    <IconButton
+                      edge="end"
+                      onClick={() => handleDeleteClick(record)}
+                      title="Delete Record"
+                      size="small"
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                </ListItemSecondaryAction>
+              </ListItem>
+            </Card>
+          ))}
+        </List>
+      )}
+
+      {/* Floating Action Button */}
+      <Fab
+        color="primary"
+        aria-label="add record"
+        sx={{ position: 'fixed', bottom: 80, right: 16 }}
+        onClick={() => navigate('/form')}
+      >
+        <AddIcon />
+      </Fab>
+
+      {/* Filter Menu */}
+      <Menu
+        anchorEl={filterAnchorEl}
+        open={Boolean(filterAnchorEl)}
+        onClose={() => setFilterAnchorEl(null)}
+        PaperProps={{ sx: { width: 250, p: 2 } }}
+      >
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Sync Status</InputLabel>
+              <Select
+                value={filters.syncStatus}
+                onChange={(e) => setFilters(prev => ({ ...prev, syncStatus: e.target.value }))}
+                label="Sync Status"
+              >
+                <MenuItem value="all">All Records</MenuItem>
+                <MenuItem value="synced">Synced</MenuItem>
+                <MenuItem value="pending">Pending Sync</MenuItem>
+                <MenuItem value="offline">Offline Only</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Date Range</InputLabel>
+              <Select
+                value={filters.dateRange}
+                onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                label="Date Range"
+              >
+                <MenuItem value="all">All Time</MenuItem>
+                <MenuItem value="today">Today</MenuItem>
+                <MenuItem value="week">This Week</MenuItem>
+                <MenuItem value="month">This Month</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Age Group</InputLabel>
+              <Select
+                value={filters.ageGroup}
+                onChange={(e) => setFilters(prev => ({ ...prev, ageGroup: e.target.value }))}
+                label="Age Group"
+              >
+                <MenuItem value="all">All Ages</MenuItem>
+                <MenuItem value="infant">Infant (0-2 years)</MenuItem>
+                <MenuItem value="toddler">Toddler (2-5 years)</MenuItem>
+                <MenuItem value="child">Child (5-13 years)</MenuItem>
+                <MenuItem value="teen">Teen (13+ years)</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Menu>
+
+      {/* More Options Menu */}
+      <Menu
+        anchorEl={moreAnchorEl}
+        open={Boolean(moreAnchorEl)}
+        onClose={() => setMoreAnchorEl(null)}
+      >
+        <MenuItem onClick={() => { handleExport(); setMoreAnchorEl(null); }}>
+          <ExportIcon sx={{ mr: 1 }} />
+          Export to CSV
+        </MenuItem>
+      </Menu>
+
+      {/* View Record Dialog */}
+      <Dialog
+        open={isViewDialogOpen}
+        onClose={() => setIsViewDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        {selectedRecord && (
+          <>
+            <DialogTitle>
+              Record Details - {selectedRecord.childName}
+            </DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">Health ID</Typography>
+                  <Typography variant="body1">{selectedRecord.healthId}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">Age</Typography>
+                  <Typography variant="body1">{selectedRecord.age} years</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">Weight</Typography>
+                  <Typography variant="body1">{selectedRecord.weight} kg</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">Height</Typography>
+                  <Typography variant="body1">{selectedRecord.height} cm</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">Guardian</Typography>
+                  <Typography variant="body1">{selectedRecord.guardianName}</Typography>
+                </Grid>
+                
+                {selectedRecord.malnutritionSigns && selectedRecord.malnutritionSigns.length > 0 && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">Malnutrition Signs</Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                      {selectedRecord.malnutritionSigns.map((sign) => (
+                        <Chip key={sign} label={sign} size="small" variant="outlined" />
+                      ))}
+                    </Box>
+                  </Grid>
+                )}
+                
+                {selectedRecord.recentIllnesses && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">Recent Illnesses</Typography>
+                    <Typography variant="body1">{selectedRecord.recentIllnesses}</Typography>
+                  </Grid>
+                )}
+                
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">Recorded</Typography>
+                  <Typography variant="body1">{formatDate(selectedRecord.timestamp)}</Typography>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">Sync Status</Typography>
+                  <Chip
+                    icon={getSyncStatusIcon(selectedRecord)}
+                    label={getSyncStatusText(selectedRecord)}
+                    size="small"
+                    color={getSyncStatusColor(selectedRecord)}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setIsViewDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This action cannot be undone.
+          </Alert>
+          <Typography>
+            Are you sure you want to delete the record for{' '}
+            <strong>{recordToDelete?.childName}</strong>?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsDeleteDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default RecordsList;
