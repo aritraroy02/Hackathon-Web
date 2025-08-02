@@ -36,9 +36,6 @@ function App() {
         // Initialize IndexedDB for offline storage
         await initializeDatabase();
         console.log('IndexedDB initialized');
-
-        // Backend connection will be checked when needed via API calls
-        console.log('Frontend will connect to backend API when online');
       } catch (error) {
         console.error('Database initialization failed:', error);
       }

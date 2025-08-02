@@ -1,9 +1,8 @@
 /**
- * Enhanced Authentication Service
- * Uses MongoDB when online, falls back to mock for offline/demo
+ * Mock Authentication Service
+ * Provides authentication functionality for offline/demo mode
  */
 
-import { requestOtp as mongoRequestOtp, verifyOtp as mongoVerifyOtp } from './mongoAuth';
 import { checkNetworkStatus } from './network';
 
 // Simulate network delay for mock auth
@@ -37,64 +36,44 @@ const mockUsers = {
   }
 };
 
-// Store OTP temporarily (in real implementation, this would be server-side)
+// Store OTP temporarily for demo purposes
 let otpStore = {};
 
 /**
- * Enhanced Authentication Class
+ * Mock Authentication Class
  */
-class EnhancedAuth {
+class MockAuth {
   constructor() {
     this.baseUrl = '/api/esignet'; // Mock API endpoint
   }
 
   /**
    * Request OTP for National ID
-   * Uses MongoDB when online, mock when offline
+   * Mock implementation for demo
    */
   async requestOtp(nationalId) {
     try {
-      // Check if we should use MongoDB (online) or mock (offline)
-      const isOnline = navigator.onLine && await checkNetworkStatus();
-      
-      if (isOnline) {
-        // Use MongoDB authentication
-        console.log('Using MongoDB authentication');
-        return await mongoRequestOtp(nationalId);
-      } else {
-        // Use mock authentication for offline demo
-        console.log('Using mock authentication (offline mode)');
-        return await this.mockRequestOtp(nationalId);
-      }
+      // Use mock authentication
+      console.log('Using mock authentication');
+      return await this.mockRequestOtp(nationalId);
     } catch (error) {
       console.error('Authentication request failed:', error);
-      // Fallback to mock if MongoDB fails
-      return await this.mockRequestOtp(nationalId);
+      throw error;
     }
   }
 
   /**
    * Verify OTP
-   * Uses MongoDB when online, mock when offline
+   * Mock implementation for demo
    */
   async verifyOtp(nationalId, otp) {
     try {
-      // Check if we should use MongoDB (online) or mock (offline)
-      const isOnline = navigator.onLine && await checkNetworkStatus();
-      
-      if (isOnline) {
-        // Use MongoDB authentication
-        console.log('Using MongoDB verification');
-        return await mongoVerifyOtp(nationalId, otp);
-      } else {
-        // Use mock authentication for offline demo
-        console.log('Using mock verification (offline mode)');
-        return await this.mockVerifyOtp(nationalId, otp);
-      }
+      // Use mock authentication
+      console.log('Using mock verification');
+      return await this.mockVerifyOtp(nationalId, otp);
     } catch (error) {
       console.error('Authentication verification failed:', error);
-      // Fallback to mock if MongoDB fails
-      return await this.mockVerifyOtp(nationalId, otp);
+      throw error;
     }
   }
 
@@ -115,7 +94,7 @@ class EnhancedAuth {
       };
     }
 
-    // Check if user exists (in real implementation, this would be done on server)
+    // Check if user exists or create demo user
     const user = mockUsers[nationalId];
     if (!user && nationalId.length === 10) {
       // Create a temporary user for demo purposes
@@ -144,7 +123,7 @@ class EnhancedAuth {
     return {
       success: true,
       message: 'OTP sent successfully',
-      otp, // In real implementation, this would not be returned
+      otp, // For demo purposes - shows the generated OTP
       maskedPhone: mockUsers[nationalId]?.phone || '***-***-' + nationalId.slice(-4),
       sessionId: `session_${nationalId}_${Date.now()}`
     };
@@ -288,7 +267,7 @@ class EnhancedAuth {
   async logout(token) {
     await simulateNetworkDelay(200, 500);
     
-    // In real implementation, would invalidate token on server
+    // Clear token from local storage
     return {
       success: true,
       message: 'Logout successful'
@@ -326,7 +305,10 @@ class EnhancedAuth {
 }
 
 // Export singleton instance
-export const mockESignetAuth = new EnhancedAuth();
+export const mockESignetAuth = new MockAuth();
+
+// Create singleton instance
+const mockAuth = new MockAuth();
 
 // Export utilities for testing
 export const testUtils = {
@@ -338,4 +320,4 @@ export const testUtils = {
   getMockUsers: () => mockUsers
 };
 
-export default mockESignetAuth;
+export default mockAuth;

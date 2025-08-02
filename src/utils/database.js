@@ -1,10 +1,9 @@
 /**
  * Database utilities for Child Health PWA
- * Frontend version - uses API for backend communication and IndexedDB for offline storage
+ * Offline-first version - uses IndexedDB for local storage
  */
 
 import CryptoJS from 'crypto-js';
-// Core database utilities for IndexedDB and API integration
 
 const DB_NAME = 'ChildHealthPWA';
 const DB_VERSION = 1;
@@ -18,19 +17,6 @@ const STORES = {
 const ENCRYPTION_KEY = 'child-health-pwa-key-2024';
 
 let db = null;
-
-/**
- * Check API backend availability
- */
-const checkBackendConnection = async () => {
-  try {
-    const { checkBackendAvailability } = await import('../services/api');
-    return await checkBackendAvailability();
-  } catch (error) {
-    console.error('Backend connection check failed:', error);
-    return false;
-  }
-};
 
 /**
  * Initialize IndexedDB database
@@ -114,54 +100,13 @@ const decryptData = (encryptedData) => {
 };
 
 /**
- * Save a child health record (Backend API when online, IndexedDB when offline)
+ * Save a child health record to IndexedDB
  */
 export const saveRecord = async (record) => {
   try {
-    // Try backend API first if we're online
-    if (navigator.onLine && await checkBackendConnection()) {
-      return await saveRecordToBackend(record);
-    } else {
-      // Fallback to IndexedDB for offline storage
-      return await saveRecordToIndexedDB(record);
-    }
+    return await saveRecordToIndexedDB(record);
   } catch (error) {
     console.error('Error saving record:', error);
-    // If backend fails, try IndexedDB as backup
-    return await saveRecordToIndexedDB(record);
-  }
-};
-
-/**
- * Save record to Backend API
- */
-const saveRecordToBackend = async (record) => {
-  try {
-    const { childrenAPI } = await import('../services/api');
-    
-    const childData = {
-      ...record,
-      healthId: record.healthId || generateHealthId(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      syncStatus: 'synced',
-      isOfflineRecord: false
-    };
-    
-    const response = await childrenAPI.create(childData);
-    
-    if (response.success) {
-      console.log('Record saved to backend:', response.data._id);
-      return {
-        ...response.data,
-        id: response.data._id.toString(),
-        synced: true
-      };
-    } else {
-      throw new Error(response.message || 'Failed to save record');
-    }
-  } catch (error) {
-    console.error('Failed to save to backend:', error);
     throw error;
   }
 };
@@ -222,56 +167,13 @@ const saveRecordToIndexedDB = async (record) => {
 };
 
 /**
- * Get all records (from Backend API when online, IndexedDB when offline)
+ * Get all records from IndexedDB
  */
 export const getAllRecords = async () => {
   try {
-    // Try Backend API first if we're online
-    if (navigator.onLine && await checkBackendConnection()) {
-      const backendRecords = await getRecordsFromBackend();
-      const offlineRecords = await getRecordsFromIndexedDB();
-      
-      // Combine both sources, prioritizing backend records
-      const allRecords = [...backendRecords];
-      
-      // Add offline records that haven't been synced
-      for (const offlineRecord of offlineRecords) {
-        if (!offlineRecord.synced) {
-          allRecords.push(offlineRecord);
-        }
-      }
-      
-      return allRecords;
-    } else {
-      // If offline, get from IndexedDB only
-      return await getRecordsFromIndexedDB();
-    }
+    return await getRecordsFromIndexedDB();
   } catch (error) {
     console.error('Error getting records:', error);
-    // Fallback to IndexedDB
-    return await getRecordsFromIndexedDB();
-  }
-};
-
-/**
- * Get records from Backend API
- */
-const getRecordsFromBackend = async () => {
-  try {
-    const { childrenAPI } = await import('../services/api');
-    const response = await childrenAPI.getAll();
-    
-    if (response.success) {
-      return response.data.map(child => ({
-        ...child,
-        id: child._id.toString(),
-        synced: true
-      }));
-    } else {
-      throw new Error(response.message || 'Failed to get records');
-    }
-  } catch (error) {
-    console.error('Failed to get records from backend:', error);
     return [];
   }
 };
