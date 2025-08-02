@@ -31,6 +31,7 @@ import {
   Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { saveRecord, generateHealthId } from '../../utils/database';
 import PhotoCapture from './PhotoCapture';
 import FormValidation from './FormValidation';
@@ -66,6 +67,7 @@ const ChildForm = () => {
     showNotification,
     setLoading
   } = useAppContext();
+  const { user, isAuthenticated } = useAuth();
 
   const [activeStep, setActiveStep] = useState(0);
   const [errors, setErrors] = useState({});
@@ -247,9 +249,17 @@ const ChildForm = () => {
         ...state.currentForm,
         location,
         timestamp: new Date().toISOString(),
-        submittedBy: 'offline-user',
-        submitterName: 'Offline User',
-        submissionMode: 'offline'
+        submittedBy: (isAuthenticated && user) ? user.uinNumber : 'offline-user',
+        submitterName: (isAuthenticated && user) ? user.name : 'Offline User',
+        submitterInfo: (isAuthenticated && user) ? {
+          employeeId: user.employeeId || '',
+          role: user.role || '',
+          department: user.department || '',
+          designation: user.designation || '',
+          email: user.email || '',
+          phone: user.phone || ''
+        } : null,
+        submissionMode: (isAuthenticated && user) ? 'authenticated' : 'offline'
       };
 
       // Save to local database
@@ -273,8 +283,12 @@ const ChildForm = () => {
         'success'
       );
 
-      // Show offline status
-      showNotification('Record saved offline (demo mode)', 'info');
+      // Show submission status based on authentication
+      if (isAuthenticated && user) {
+        showNotification(`Record submitted by ${user.name || 'User'} (${user.employeeId || 'N/A'})`, 'info');
+      } else {
+        showNotification('Record saved offline (demo mode)', 'info');
+      }
 
     } catch (error) {
       console.error('Failed to save record:', error);
@@ -569,14 +583,25 @@ const ChildForm = () => {
           title="Child Health Data Collection"
           subheader="Complete all sections to register a new child health record"
           action={
-            autoSaveStatus && (
-              <Chip 
-                label={autoSaveStatus} 
-                size="small" 
-                color="info" 
-                variant="outlined" 
-              />
-            )
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              {isAuthenticated && user && (
+                <Chip 
+                  label={`Logged in as ${user.name?.split(' ')[0] || 'User'}`}
+                  size="small" 
+                  color="success" 
+                  variant="outlined"
+                  icon={<PersonIcon />}
+                />
+              )}
+              {autoSaveStatus && (
+                <Chip 
+                  label={autoSaveStatus} 
+                  size="small" 
+                  color="info" 
+                  variant="outlined" 
+                />
+              )}
+            </Box>
           }
         />
         

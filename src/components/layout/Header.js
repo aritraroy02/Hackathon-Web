@@ -1,20 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AppBar,
   Toolbar,
   Typography,
   IconButton,
   Box,
-  Badge
+  Badge,
+  Avatar,
+  Chip
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Notifications as NotificationsIcon
+  Notifications as NotificationsIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
+import LoginModal from '../auth/LoginModal';
+import ProfileModal from '../auth/ProfileModal';
 
 const Header = () => {
   const { state } = useAppContext();
+  const { isAuthenticated, user } = useAuth();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+
+  const handleProfileClick = () => {
+    if (isAuthenticated && user) {
+      setProfileModalOpen(true);
+    } else {
+      setLoginModalOpen(true);
+    }
+  };
 
   return (
     <AppBar position="sticky" elevation={2}>
@@ -37,6 +54,49 @@ const Header = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* User Profile */}
+          {isAuthenticated && user ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip
+                avatar={
+                  <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>
+                    {user.name?.charAt(0) || 'U'}
+                  </Avatar>
+                }
+                label={`Welcome, ${user.name?.split(' ')[0] || 'User'}`}
+                variant="outlined"
+                size="small"
+                onClick={handleProfileClick}
+                sx={{ 
+                  cursor: 'pointer',
+                  color: 'white',
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                  '& .MuiChip-avatar': {
+                    color: 'white',
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
+                  },
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderColor: 'rgba(255, 255, 255, 0.7)'
+                  }
+                }}
+              />
+            </Box>
+          ) : (
+            <IconButton
+              color="inherit"
+              onClick={handleProfileClick}
+              title="Login"
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                }
+              }}
+            >
+              <PersonIcon />
+            </IconButton>
+          )}
+
           {/* Notifications */}
           <IconButton
             color="inherit"
@@ -44,13 +104,23 @@ const Header = () => {
           >
             <Badge 
               badgeContent={state.savedRecords.length}
-              color="primary"
+              color="error"
             >
               <NotificationsIcon />
             </Badge>
           </IconButton>
         </Box>
       </Toolbar>
+
+      {/* Modals */}
+      <LoginModal 
+        open={loginModalOpen} 
+        onClose={() => setLoginModalOpen(false)} 
+      />
+      <ProfileModal 
+        open={profileModalOpen} 
+        onClose={() => setProfileModalOpen(false)} 
+      />
     </AppBar>
   );
 };

@@ -10,6 +10,7 @@ import HelpPage from './components/help/HelpPage';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import InstallPrompt from './components/common/InstallPrompt';
 import { useAppContext } from './contexts/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { initializeDatabase } from './utils/database';
 
 function App() {
@@ -57,51 +58,53 @@ function App() {
   };
 
   return (
-    <Box className="app-container">
-      <Header />
-      
-      <OfflineIndicator 
-        isOnline={state.isOnline}
-        isSyncing={state.isSyncing}
-        pendingCount={state.pendingRecords.length}
-      />
-      
-      <Container 
-        component="main" 
-        className="main-content"
-        maxWidth="lg"
-        sx={{ py: 2 }}
-      >
-        <Routes>
-          <Route path="/" element={<ChildForm />} />
-          <Route path="/form" element={<ChildForm />} />
-          <Route path="/records" element={<RecordsList />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/help" element={<HelpPage />} />
-          <Route path="*" element={<ChildForm />} />
-        </Routes>
-      </Container>
-
-      <Navigation />
-      
-      <InstallPrompt />
-      
-      <Snackbar
-        open={state.notification.show}
-        onClose={hideNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ mt: 8 }}
-      >
-        <Alert 
-          onClose={hideNotification} 
-          severity={getNotificationSeverity(state.notification.type)}
-          variant="filled"
-          sx={{ width: '100%' }}
+    <AuthProvider>
+      <Box className="app-container">
+        <Header />
+        
+        <OfflineIndicator 
+          isOnline={state.isOnline}
+          isSyncing={state.isSyncing}
+          pendingCount={state.pendingRecords.length}
+        />
+        
+        <Container 
+          component="main" 
+          className="main-content"
+          maxWidth="lg"
+          sx={{ py: 2 }}
         >
-          {state.notification.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Routes>
+            <Route path="/" element={<ChildForm />} />
+            <Route path="/form" element={<ChildForm />} />
+            <Route path="/records" element={<RecordsList />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/help" element={<HelpPage />} />
+            <Route path="*" element={<ChildForm />} />
+          </Routes>
+        </Container>
+
+        <Navigation />
+        
+        <InstallPrompt />
+        
+        <Snackbar
+          open={state.notification.show}
+          onClose={hideNotification}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{ mt: 8 }}
+        >
+          <Alert 
+            onClose={hideNotification} 
+            severity={getNotificationSeverity(state.notification.type)}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {state.notification.message}
+          </Alert>
+        </Snackbar>
+      </Box>
+    </AuthProvider>
   );
 }
 
