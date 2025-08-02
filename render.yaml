@@ -1,0 +1,7 @@
+# Build configuration for Render.com
+version: 1
+build:
+  env: node
+  buildCommand: npm install && npm run build
+  publishDir: build
+  nodejs: 18

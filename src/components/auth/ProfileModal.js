@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,7 +11,9 @@ import {
   Divider,
   Grid,
   Chip,
-  IconButton
+  IconButton,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -22,12 +24,81 @@ import {
   Work as WorkIcon,
   Badge as BadgeIcon,
   Close as CloseIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  MyLocation as MyLocationIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAppContext } from '../../contexts/AppContext';
+import { getLocationWithFallback, checkLocationPermission } from '../../utils/locationService';
 
 const ProfileModal = ({ open, onClose }) => {
   const { user, logout } = useAuth();
+  const { state, setLocation, setLocationLoading, setLocationError, showNotification } = useAppContext();
+  const [locationFetchRequested, setLocationFetchRequested] = useState(false);
+
+  useEffect(() => {
+    // Auto-fetch location when modal opens and user is authenticated
+    if (open && user && !state.currentLocation && !locationFetchRequested) {
+      handleFetchLocation();
+      setLocationFetchRequested(true);
+    }
+  }, [open, user]);
+
+  const handleFetchLocation = async () => {
+    if (!state.isOnline) {
+      showNotification('Internet connection required for location services', 'warning');
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError(null);
+
+    try {
+      console.log('Starting location fetch...');
+      
+      // First check if location permission is available
+      const permissionState = await checkLocationPermission();
+      console.log('Permission state:', permissionState);
+      
+      if (permissionState === 'denied') {
+        throw new Error('Location permission denied. Please enable location access in your browser settings and refresh the page.');
+      }
+      
+      // Use fallback method for better reliability
+      const location = await getLocationWithFallback();
+      setLocation(location);
+      
+      if (location.isApproximate) {
+        showNotification('Using approximate location based on IP address', 'info');
+      } else if (location.accuracy <= 100) {
+        showNotification(`Location updated successfully (${Math.round(location.accuracy)}m accuracy)`, 'success');
+      } else {
+        showNotification(`Location updated with ${Math.round(location.accuracy)}m accuracy`, 'warning');
+      }
+      
+      console.log('Location set successfully:', location);
+      
+    } catch (error) {
+      console.error('Location fetch failed:', error);
+      const errorMessage = error.message || 'Failed to get location';
+      setLocationError(errorMessage);
+      
+      // Provide helpful suggestions based on error type
+      if (errorMessage.includes('denied') || errorMessage.includes('permission')) {
+        showNotification('Please enable location permission in your browser settings', 'error');
+      } else if (errorMessage.includes('unavailable')) {
+        showNotification('Location services unavailable. Check your GPS settings', 'error');
+      } else if (errorMessage.includes('timeout')) {
+        showNotification('Location request timed out. Try again', 'warning');
+      } else if (errorMessage.includes('HTTPS') || errorMessage.includes('secure')) {
+        showNotification('Location requires secure connection (HTTPS)', 'error');
+      } else {
+        showNotification(`Location error: ${errorMessage.split('\n')[0]}`, 'error');
+      }
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -214,6 +285,102 @@ const ProfileModal = ({ open, onClose }) => {
             </Box>
           </Grid>
         </Grid>
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* Location Section */}
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" color="primary">
+              Current Location
+            </Typography>
+            <Button
+              size="small"
+              startIcon={state.locationLoading ? <CircularProgress size={16} /> : <MyLocationIcon />}
+              onClick={handleFetchLocation}
+              disabled={state.locationLoading || !state.isOnline}
+            >
+              {state.locationLoading ? 'Getting Location...' : 'Update Location'}
+            </Button>
+          </Box>
+
+          {state.locationError && (
+            <Alert 
+              severity="error" 
+              sx={{ mb: 2 }}
+              action={
+                state.locationError.includes('permission') || state.locationError.includes('denied') ? (
+                  <Button size="small" onClick={() => window.location.reload()}>
+                    Reload Page
+                  </Button>
+                ) : null
+              }
+            >
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  {state.locationError.split('\n')[0]}
+                </Typography>
+                {state.locationError.includes('•') && (
+                  <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                    {state.locationError.split('•').slice(1).map((tip, index) => (
+                      <Typography component="li" variant="body2" key={index} sx={{ fontSize: '0.8rem' }}>
+                        {tip.trim()}
+                      </Typography>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            </Alert>
+          )}
+
+          {!state.isOnline && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Internet connection required for location services
+            </Alert>
+          )}
+
+          {state.currentLocation ? (
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+              <LocationIcon sx={{ mr: 2, color: 'text.secondary', mt: 0.5 }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body1" gutterBottom>
+                  {state.currentLocation.address || `${state.currentLocation.latitude.toFixed(6)}, ${state.currentLocation.longitude.toFixed(6)}`}
+                </Typography>
+                {state.currentLocation.city && (
+                  <Typography variant="body2" color="text.secondary">
+                    {state.currentLocation.city}, {state.currentLocation.state}
+                  </Typography>
+                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  {state.currentLocation.isApproximate ? (
+                    <Chip label="IP-based Location" size="small" color="info" />
+                  ) : state.currentLocation.accuracy <= 100 ? (
+                    <Chip label="High Accuracy" size="small" color="success" />
+                  ) : (
+                    <Chip label="Low Accuracy" size="small" color="warning" />
+                  )}
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {state.currentLocation.isApproximate ? (
+                    <>
+                      Approximate location • 
+                      Updated: {new Date(state.currentLocation.timestamp).toLocaleString()}
+                    </>
+                  ) : (
+                    <>
+                      Accuracy: {Math.round(state.currentLocation.accuracy)}m • 
+                      Updated: {new Date(state.currentLocation.timestamp).toLocaleString()}
+                    </>
+                  )}
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              Location not available. Click "Update Location" to fetch current position.
+            </Typography>
+          )}
+        </Box>
       </DialogContent>
 
       <DialogActions sx={{ p: 2, pt: 1 }}>

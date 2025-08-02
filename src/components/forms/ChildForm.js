@@ -33,6 +33,7 @@ import {
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveRecord, generateHealthId } from '../../utils/database';
+import { getLocationWithFallback } from '../../utils/locationService';
 import PhotoCapture from './PhotoCapture';
 import FormValidation from './FormValidation';
 
@@ -222,44 +223,66 @@ const ChildForm = () => {
         generateUniqueHealthId();
       }
 
-      // Get user location if available
+      // Get user location if available and user is authenticated
       let location = null;
-      if (navigator.geolocation) {
+      if (isAuthenticated && user) {
         try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 5000,
-              enableHighAccuracy: false
-            });
-          });
+          showNotification('Fetching location...', 'info');
+          location = await getLocationWithFallback();
           
-          location = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            timestamp: new Date().toISOString()
-          };
+          if (location.isApproximate) {
+            showNotification('Location captured (approximate)', 'info');
+          } else {
+            showNotification('Location captured successfully', 'success');
+          }
         } catch (error) {
           console.log('Location not available:', error);
+          showNotification(`Location unavailable: ${error.message.split('\n')[0]}`, 'warning');
         }
       }
 
-      // Prepare record data
+      // Prepare record data with user information matching the required schema
       const recordData = {
-        ...state.currentForm,
-        location,
-        timestamp: new Date().toISOString(),
-        submittedBy: (isAuthenticated && user) ? user.uinNumber : 'offline-user',
-        submitterName: (isAuthenticated && user) ? user.name : 'Offline User',
-        submitterInfo: (isAuthenticated && user) ? {
-          employeeId: user.employeeId || '',
-          role: user.role || '',
-          department: user.department || '',
-          designation: user.designation || '',
-          email: user.email || '',
-          phone: user.phone || ''
-        } : null,
-        submissionMode: (isAuthenticated && user) ? 'authenticated' : 'offline'
+        // Child Information
+        childName: state.currentForm.childName,
+        age: state.currentForm.age,
+        gender: state.currentForm.gender,
+        weight: state.currentForm.weight,
+        height: state.currentForm.height,
+        
+        // Guardian Information
+        guardianName: state.currentForm.guardianName,
+        relation: state.currentForm.relation || 'Parent',
+        phone: state.currentForm.phone,
+        parentsConsent: state.currentForm.parentalConsent || false,
+        
+        // Health Information
+        healthId: state.currentForm.healthId,
+        facePhoto: state.currentForm.photo,
+        localId: `LOC${Date.now().toString().slice(-6)}`,
+        idType: state.currentForm.idType || 'aadhar',
+        countryCode: state.currentForm.countryCode || '+91',
+        malnutritionSigns: Array.isArray(state.currentForm.malnutritionSigns) 
+          ? state.currentForm.malnutritionSigns.join(', ')
+          : state.currentForm.malnutritionSigns || '',
+        recentIllnesses: state.currentForm.recentIllnesses || '',
+        skipMalnutrition: false,
+        skipIllnesses: false,
+        
+        // Timestamps and Status
+        dateCollected: new Date().toISOString(),
+        isOffline: !isAuthenticated || !state.isOnline,
+        
+        // Location (if available)
+        location: location || null,
+        
+        // Upload tracking (if authenticated)
+        ...(isAuthenticated && user && {
+          uploadedBy: user.name || `${user.firstName} ${user.lastName}`,
+          uploaderUIN: user.uin,
+          uploaderEmployeeId: user.employeeId,
+          uploadedAt: new Date().toISOString()
+        })
       };
 
       // Save to local database
@@ -606,6 +629,32 @@ const ChildForm = () => {
         />
         
         <CardContent>
+          {/* Status Alerts */}
+          {!isAuthenticated && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                You're working offline. Data will be stored locally. 
+                <strong> Log in with internet connection to enable location tracking and data upload.</strong>
+              </Typography>
+            </Alert>
+          )}
+          
+          {isAuthenticated && !state.isOnline && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                You're offline. Location services unavailable. Data will be saved locally for later upload.
+              </Typography>
+            </Alert>
+          )}
+          
+          {isAuthenticated && state.isOnline && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                ✓ Online • ✓ Authenticated • ✓ Location services available • Ready for full data collection
+              </Typography>
+            </Alert>
+          )}
+          
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
             {steps.map((label) => (
               <Step key={label}>

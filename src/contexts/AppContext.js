@@ -27,6 +27,18 @@ const initialState = {
   isOnline: navigator.onLine,
   isSyncing: false,
   isLoading: false,
+  isUploading: false,
+  uploadProgress: {
+    current: 0,
+    total: 0,
+    percentage: 0,
+    currentRecord: null
+  },
+  
+  // Location state
+  currentLocation: null,
+  locationLoading: false,
+  locationError: null,
   
   // UI state
   notification: {
@@ -61,11 +73,19 @@ export const actionTypes = {
   ADD_PENDING_RECORD: 'ADD_PENDING_RECORD',
   REMOVE_PENDING_RECORD: 'REMOVE_PENDING_RECORD',
   MARK_RECORD_SYNCED: 'MARK_RECORD_SYNCED',
+  MARK_RECORD_UPLOADED: 'MARK_RECORD_UPLOADED',
+  SET_UPLOAD_PROGRESS: 'SET_UPLOAD_PROGRESS',
   
   // App state
   SET_ONLINE_STATUS: 'SET_ONLINE_STATUS',
   SET_SYNCING: 'SET_SYNCING',
   SET_LOADING: 'SET_LOADING',
+  SET_UPLOADING: 'SET_UPLOADING',
+  
+  // Location
+  SET_LOCATION: 'SET_LOCATION',
+  SET_LOCATION_LOADING: 'SET_LOCATION_LOADING',
+  SET_LOCATION_ERROR: 'SET_LOCATION_ERROR',
   
   // UI
   SHOW_NOTIFICATION: 'SHOW_NOTIFICATION',
@@ -174,6 +194,49 @@ const appReducer = (state, action) => {
         isLoading: action.payload
       };
       
+    case actionTypes.SET_UPLOADING:
+      return {
+        ...state,
+        isUploading: action.payload
+      };
+      
+    case actionTypes.SET_UPLOAD_PROGRESS:
+      return {
+        ...state,
+        uploadProgress: action.payload
+      };
+      
+    case actionTypes.MARK_RECORD_UPLOADED:
+      return {
+        ...state,
+        pendingRecords: state.pendingRecords.map(record =>
+          record.localId === action.payload.localId
+            ? { ...record, uploadStatus: 'uploaded', uploadedAt: new Date().toISOString() }
+            : record
+        )
+      };
+      
+    case actionTypes.SET_LOCATION:
+      return {
+        ...state,
+        currentLocation: action.payload,
+        locationLoading: false,
+        locationError: null
+      };
+      
+    case actionTypes.SET_LOCATION_LOADING:
+      return {
+        ...state,
+        locationLoading: action.payload
+      };
+      
+    case actionTypes.SET_LOCATION_ERROR:
+      return {
+        ...state,
+        locationError: action.payload,
+        locationLoading: false
+      };
+      
     case actionTypes.SHOW_NOTIFICATION:
       return {
         ...state,
@@ -273,6 +336,30 @@ export const AppProvider = ({ children }) => {
     dispatch({ type: actionTypes.SET_SYNCING, payload: syncing });
   }, []);
   
+  const setUploading = useCallback((uploading) => {
+    dispatch({ type: actionTypes.SET_UPLOADING, payload: uploading });
+  }, []);
+  
+  const setUploadProgress = useCallback((progress) => {
+    dispatch({ type: actionTypes.SET_UPLOAD_PROGRESS, payload: progress });
+  }, []);
+  
+  const markRecordUploaded = useCallback((recordData) => {
+    dispatch({ type: actionTypes.MARK_RECORD_UPLOADED, payload: recordData });
+  }, []);
+  
+  const setLocation = useCallback((location) => {
+    dispatch({ type: actionTypes.SET_LOCATION, payload: location });
+  }, []);
+  
+  const setLocationLoading = useCallback((loading) => {
+    dispatch({ type: actionTypes.SET_LOCATION_LOADING, payload: loading });
+  }, []);
+  
+  const setLocationError = useCallback((error) => {
+    dispatch({ type: actionTypes.SET_LOCATION_ERROR, payload: error });
+  }, []);
+  
   const updateSettings = useCallback((newSettings) => {
     dispatch({ type: actionTypes.UPDATE_SETTINGS, payload: newSettings });
   }, []);
@@ -289,8 +376,14 @@ export const AppProvider = ({ children }) => {
     addPendingRecord,
     removePendingRecord,
     markRecordSynced,
+    markRecordUploaded,
     setLoading,
     setSyncing,
+    setUploading,
+    setUploadProgress,
+    setLocation,
+    setLocationLoading,
+    setLocationError,
     updateSettings
   };
 

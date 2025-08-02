@@ -7,7 +7,9 @@ import {
   Box,
   Badge,
   Avatar,
-  Chip
+  Chip,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -16,16 +18,30 @@ import {
 } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { checkInternetConnectivity } from '../../utils/networkUtils';
 import LoginModal from '../auth/LoginModal';
 import ProfileModal from '../auth/ProfileModal';
 
 const Header = () => {
-  const { state } = useAppContext();
+  const { state, showNotification } = useAppContext();
   const { isAuthenticated, user } = useAuth();
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  const handleProfileClick = () => {
+  const handleProfileClick = async () => {
+    // Check if internet is available for authentication
+    if (!state.isOnline) {
+      showNotification('Please connect to internet to access profile features', 'warning');
+      return;
+    }
+
+    // Double-check internet connectivity
+    const hasInternet = await checkInternetConnectivity();
+    if (!hasInternet) {
+      showNotification('Internet connection required for authentication', 'warning');
+      return;
+    }
+
     if (isAuthenticated && user) {
       setProfileModalOpen(true);
     } else {

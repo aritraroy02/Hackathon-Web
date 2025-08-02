@@ -26,7 +26,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  CircularProgress
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -40,15 +41,20 @@ import {
   CloudDone as SyncedIcon,
   Schedule as PendingIcon,
   GetApp as ExportIcon,
-  MoreVert as MoreIcon
+  MoreVert as MoreIcon,
+  CloudUpload as UploadIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getAllRecords, deleteRecord } from '../../utils/database';
+import { uploadRecordsBatch, testBackendConnection } from '../../utils/uploadService';
+import { checkInternetConnectivity } from '../../utils/networkUtils';
 
 const RecordsList = () => {
   const navigate = useNavigate();
-  const { state, dispatch, showNotification } = useAppContext();
+  const { state, dispatch, showNotification, setUploading, setUploadProgress, markRecordUploaded } = useAppContext();
+  const { isAuthenticated, user } = useAuth();
   
   const [records, setRecords] = useState([]);
   const [filteredRecords, setFilteredRecords] = useState([]);
@@ -195,6 +201,105 @@ const RecordsList = () => {
     }
   };
 
+  // Upload functionality
+  const handleUploadAll = async () => {
+    // Check authentication
+    if (!isAuthenticated || !user) {
+      showNotification('Please login to upload records', 'warning');
+      return;
+    }
+
+    // Check internet connectivity
+    if (!state.isOnline) {
+      showNotification('Internet connection required for upload', 'warning');
+      return;
+    }
+
+    // Double-check connectivity
+    const hasInternet = await checkInternetConnectivity();
+    if (!hasInternet) {
+      showNotification('No internet connection. Please check your network.', 'error');
+      return;
+    }
+
+    // Get pending records (not uploaded)
+    const pendingRecords = records.filter(record => 
+      !record.synced && record.uploadStatus !== 'uploaded'
+    );
+
+    if (pendingRecords.length === 0) {
+      showNotification('No pending records to upload', 'info');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setUploadProgress({
+        current: 0,
+        total: pendingRecords.length,
+        percentage: 0,
+        currentRecord: null
+      });
+
+      const results = await uploadRecordsBatch(
+        pendingRecords,
+        user,
+        (progress) => {
+          setUploadProgress({
+            current: progress.completed,
+            total: progress.total,
+            percentage: progress.percentage,
+            currentRecord: progress.current
+          });
+        }
+      );
+
+      // Update records status
+      results.successful.forEach(result => {
+        markRecordUploaded({ localId: result.recordId });
+      });
+
+      // Update local records state
+      setRecords(prev => prev.map(record => {
+        const successful = results.successful.find(r => r.recordId === record.localId);
+        if (successful) {
+          return { ...record, synced: true, uploadStatus: 'uploaded' };
+        }
+        return record;
+      }));
+
+      // Show results
+      const successCount = results.successful.length;
+      const failCount = results.failed.length;
+
+      if (successCount > 0 && failCount === 0) {
+        showNotification(`Successfully uploaded ${successCount} records`, 'success');
+      } else if (successCount > 0 && failCount > 0) {
+        showNotification(`Uploaded ${successCount} records, ${failCount} failed`, 'warning');
+      } else {
+        showNotification(`Upload failed for all ${failCount} records`, 'error');
+      }
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      showNotification(`Upload failed: ${error.message}`, 'error');
+    } finally {
+      setUploading(false);
+      setUploadProgress({
+        current: 0,
+        total: 0,
+        percentage: 0,
+        currentRecord: null
+      });
+    }
+  };
+
+  const getPendingRecordsCount = () => {
+    return records.filter(record => 
+      !record.synced && record.uploadStatus !== 'uploaded'
+    ).length;
+  };
+
   const getSyncStatusText = (record) => {
     if (record.synced) {
       return 'Synced';
@@ -301,6 +406,22 @@ const RecordsList = () => {
             </Typography>
             
             <Box sx={{ display: 'flex', gap: 1 }}>
+              {/* Upload All Button */}
+              {getPendingRecordsCount() > 0 && (
+                <Button
+                  variant="contained"
+                  startIcon={state.isUploading ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />}
+                  onClick={handleUploadAll}
+                  disabled={state.isUploading || !state.isOnline || !isAuthenticated}
+                  size="small"
+                >
+                  {state.isUploading 
+                    ? `Uploading... (${state.uploadProgress.current}/${state.uploadProgress.total})`
+                    : `Upload All (${getPendingRecordsCount()})`
+                  }
+                </Button>
+              )}
+              
               <IconButton
                 onClick={(e) => setFilterAnchorEl(e.currentTarget)}
                 title="Filter Records"
