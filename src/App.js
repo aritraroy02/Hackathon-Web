@@ -121,7 +121,7 @@ function App() {
         sx={{ py: 2 }}
       >
         <Routes>
-          <Route path="/" element={<SettingsPage />} />
+          <Route path="/" element={<ChildForm />} />
           <Route path="/form" element={<ChildForm />} />
           <Route 
             path="/records" 
