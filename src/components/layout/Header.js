@@ -1,23 +1,33 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
   Typography,
   IconButton,
   Box,
-  Badge
+  Badge,
+  Button
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Sync as SyncIcon,
   CloudOff as OfflineIcon,
   CloudDone as OnlineIcon,
-  Notifications as NotificationsIcon
+  Notifications as NotificationsIcon,
+  Login as LoginIcon,
+  Logout as LogoutIcon
 } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
 
 const Header = () => {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch({ type: 'LOGOUT' });
+    navigate('/form');
+  };
 
   const getStatusIcon = () => {
     if (state.isSyncing) {
@@ -70,6 +80,27 @@ const Header = () => {
               {getStatusIcon()}
             </Badge>
           </IconButton>
+
+          {/* Authentication Buttons */}
+          {!state.isAuthenticated ? (
+            <Button 
+              color="inherit" 
+              startIcon={<LoginIcon />}
+              onClick={() => navigate('/auth')}
+              sx={{ ml: 1 }}
+            >
+              Sign In
+            </Button>
+          ) : (
+            <Button 
+              color="inherit" 
+              startIcon={<LogoutIcon />}
+              onClick={handleLogout}
+              sx={{ ml: 1 }}
+            >
+              Logout
+            </Button>
+          )}
 
           {/* Notifications */}
           <IconButton

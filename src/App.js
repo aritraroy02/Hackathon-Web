@@ -14,6 +14,7 @@ import InstallPrompt from './components/common/InstallPrompt';
 import { useAppContext } from './contexts/AppContext';
 import { checkNetworkStatus } from './utils/network';
 import { initializeDatabase } from './utils/database';
+import { Settings } from '@mui/icons-material';
 
 function App() {
   const { 
@@ -26,6 +27,9 @@ function App() {
   const [networkStatus, setNetworkStatus] = useState(navigator.onLine);
 
   useEffect(() => {
+    // Clear any temp data that might cause redirects
+    localStorage.removeItem('childFormTempData');
+    
     // Initialize databases
     const initializeDatabases = async () => {
       try {
@@ -117,41 +121,20 @@ function App() {
         sx={{ py: 2 }}
       >
         <Routes>
-          <Route path="/" element={<Navigate to="/form" replace />} />
+          <Route path="/" element={<SettingsPage />} />
           <Route path="/form" element={<ChildForm />} />
           <Route 
             path="/records" 
-            element={
-              state.isAuthenticated ? (
-                <RecordsList />
-              ) : (
-                <Navigate to="/auth" replace />
-              )
-            } 
+            element={state.isAuthenticated ? <RecordsList /> : <ChildForm />} 
           />
           <Route 
             path="/sync" 
-            element={
-              state.isAuthenticated ? (
-                <SyncPage />
-              ) : (
-                <Navigate to="/auth" replace />
-              )
-            } 
+            element={state.isAuthenticated ? <SyncPage /> : <ChildForm />} 
           />
           <Route path="/auth" element={<AuthPage />} />
-          <Route 
-            path="/settings" 
-            element={
-              state.isAuthenticated ? (
-                <SettingsPage />
-              ) : (
-                <Navigate to="/auth" replace />
-              )
-            }
-          />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/help" element={<HelpPage />} />
-          <Route path="*" element={<Navigate to="/form" replace />} />
+          <Route path="*" element={<ChildForm />} />
         </Routes>
       </Container>
 

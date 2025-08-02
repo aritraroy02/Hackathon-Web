@@ -112,20 +112,26 @@ const ChildForm = () => {
       if (tempData) {
         try {
           const parsedData = JSON.parse(tempData);
-          // Restore form data
-          Object.keys(parsedData).forEach(key => {
-            if (key !== 'tempSave' && key !== 'lastSaved') {
-              updateFormField(key, parsedData[key]);
-            }
-          });
-          
-          // Move to review step
-          setActiveStep(steps.length - 1);
-          
-          showNotification(
-            'Authentication successful! Your form data has been restored. You can now submit.',
-            'success'
-          );
+          // Only restore if it was actually saved for submission
+          if (parsedData.tempSave) {
+            // Restore form data
+            Object.keys(parsedData).forEach(key => {
+              if (key !== 'tempSave' && key !== 'lastSaved') {
+                updateFormField(key, parsedData[key]);
+              }
+            });
+            
+            // Move to review step
+            setActiveStep(steps.length - 1);
+            
+            showNotification(
+              'Authentication successful! Your form data has been restored. You can now submit.',
+              'success'
+            );
+            
+            // Clean up temp data
+            localStorage.removeItem('childFormTempData');
+          }
           
           // Reset the submission requirement flag
           setRequiresAuthForSubmission(false);
