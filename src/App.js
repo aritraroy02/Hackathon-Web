@@ -29,9 +29,9 @@ function App() {
     const updateNetworkStatus = () => {
       const isOnline = navigator.onLine;
       setNetworkStatus(isOnline);
-      dispatch({ 
-        type: 'SET_ONLINE_STATUS', 
-        payload: isOnline 
+      dispatch({
+        type: 'SET_ONLINE_STATUS',
+        payload: isOnline
       });
       
       if (isOnline) {
@@ -140,7 +140,7 @@ function App() {
               ) : (
                 <Navigate to="/auth" replace />
               )
-            } 
+            }
           />
           <Route path="/help" element={<HelpPage />} />
           <Route path="*" element={<Navigate to="/form" replace />} />
