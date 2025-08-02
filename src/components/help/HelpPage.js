@@ -67,16 +67,16 @@ const HelpPage = () => {
       icon: <SecurityIcon />,
       content: [
         {
-          question: 'How does eSignet authentication work?',
-          answer: 'Enter your National ID, receive an OTP on your registered mobile number, and verify it to access the app. This ensures secure access to health data.'
+          question: 'How does authentication work?',
+          answer: 'Use your assigned username and password to login. Demo accounts are available: admin/password123, user/user123, demo/demo123.'
         },
         {
           question: 'Is my data secure?',
           answer: 'Yes! All sensitive data is encrypted before storage. Data only leaves your device when you explicitly sync it to the server.'
         },
         {
-          question: 'What if I forget my National ID?',
-          answer: 'Contact your system administrator or the health department that provided your credentials for assistance.'
+          question: 'What if I forget my login credentials?',
+          answer: 'For this demo application, use any of the provided demo accounts: admin/password123, user/user123, or demo/demo123.'
         }
       ]
     },
@@ -298,7 +298,7 @@ const HelpPage = () => {
                   Security
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  eSignet authentication, data encryption, and secure transmission ensure your data is always protected.
+                  Simple authentication, data encryption, and local storage ensure your data is always protected.
                 </Typography>
               </Box>
             </Grid>

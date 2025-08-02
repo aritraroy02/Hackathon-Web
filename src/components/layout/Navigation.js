@@ -9,7 +9,6 @@ import {
 import {
   Add as AddIcon,
   List as ListIcon,
-  Sync as SyncIcon,
   Settings as SettingsIcon,
   Help as HelpIcon
 } from '@mui/icons-material';
@@ -24,14 +23,13 @@ const Navigation = () => {
     const path = location.pathname;
     if (path === '/form') return 0;
     if (path === '/records') return 1;
-    if (path === '/sync') return 2;
-    if (path === '/settings') return 3;
-    if (path === '/help') return 4;
+    if (path === '/settings') return 2;
+    if (path === '/help') return 3;
     return 0;
   };
 
   const handleChange = (event, newValue) => {
-    const routes = ['/form', '/records', '/sync', '/settings', '/help'];
+    const routes = ['/form', '/records', '/settings', '/help'];
     navigate(routes[newValue]);
   };
 
@@ -75,20 +73,6 @@ const Navigation = () => {
             </Badge>
           }
           title="View Records"
-        />
-        
-        <BottomNavigationAction
-          label="Sync"
-          icon={
-            <Badge 
-              badgeContent={state.pendingRecords.length > 0 ? state.pendingRecords.length : null}
-              color="error"
-              max={99}
-            >
-              <SyncIcon />
-            </Badge>
-          }
-          title="Sync Data"
         />
         
         <BottomNavigationAction

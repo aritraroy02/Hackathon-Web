@@ -2,12 +2,6 @@ import React, { createContext, useContext, useReducer, useCallback } from 'react
 
 // Initial state
 const initialState = {
-  // Authentication
-  isAuthenticated: false,
-  user: null,
-  authToken: null,
-  requiresAuthForSubmission: false,
-  
   // Form data
   currentForm: {
     childName: '',
@@ -54,13 +48,6 @@ const initialState = {
 
 // Action types
 export const actionTypes = {
-  // Authentication
-  SET_AUTHENTICATED: 'SET_AUTHENTICATED',
-  SET_USER: 'SET_USER',
-  SET_AUTH_TOKEN: 'SET_AUTH_TOKEN',
-  SET_REQUIRES_AUTH_FOR_SUBMISSION: 'SET_REQUIRES_AUTH_FOR_SUBMISSION',
-  LOGOUT: 'LOGOUT',
-  
   // Form
   UPDATE_FORM_FIELD: 'UPDATE_FORM_FIELD',
   RESET_FORM: 'RESET_FORM',
@@ -91,40 +78,6 @@ export const actionTypes = {
 // Reducer function
 const appReducer = (state, action) => {
   switch (action.type) {
-    case actionTypes.SET_AUTHENTICATED:
-      return {
-        ...state,
-        isAuthenticated: action.payload
-      };
-      
-    case actionTypes.SET_USER:
-      return {
-        ...state,
-        user: action.payload
-      };
-      
-    case actionTypes.SET_AUTH_TOKEN:
-      return {
-        ...state,
-        authToken: action.payload
-      };
-      
-    case actionTypes.SET_REQUIRES_AUTH_FOR_SUBMISSION:
-      return {
-        ...state,
-        requiresAuthForSubmission: action.payload
-      };
-      
-    case actionTypes.LOGOUT:
-      return {
-        ...state,
-        isAuthenticated: false,
-        user: null,
-        authToken: null,
-        requiresAuthForSubmission: false,
-        currentForm: initialState.currentForm
-      };
-      
     case actionTypes.UPDATE_FORM_FIELD:
       return {
         ...state,
@@ -312,16 +265,6 @@ export const AppProvider = ({ children }) => {
     });
   }, []);
   
-  const setAuthenticated = useCallback((isAuth, user = null, token = null) => {
-    dispatch({ type: actionTypes.SET_AUTHENTICATED, payload: isAuth });
-    if (user) dispatch({ type: actionTypes.SET_USER, payload: user });
-    if (token) dispatch({ type: actionTypes.SET_AUTH_TOKEN, payload: token });
-  }, []);
-  
-  const logout = useCallback(() => {
-    dispatch({ type: actionTypes.LOGOUT });
-  }, []);
-  
   const setLoading = useCallback((loading) => {
     dispatch({ type: actionTypes.SET_LOADING, payload: loading });
   }, []);
@@ -332,10 +275,6 @@ export const AppProvider = ({ children }) => {
   
   const updateSettings = useCallback((newSettings) => {
     dispatch({ type: actionTypes.UPDATE_SETTINGS, payload: newSettings });
-  }, []);
-
-  const setRequiresAuthForSubmission = useCallback((requires) => {
-    dispatch({ type: actionTypes.SET_REQUIRES_AUTH_FOR_SUBMISSION, payload: requires });
   }, []);
 
   const value = {
@@ -350,12 +289,9 @@ export const AppProvider = ({ children }) => {
     addPendingRecord,
     removePendingRecord,
     markRecordSynced,
-    setAuthenticated,
-    logout,
     setLoading,
     setSyncing,
-    updateSettings,
-    setRequiresAuthForSubmission
+    updateSettings
   };
 
   return (

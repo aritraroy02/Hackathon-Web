@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -26,16 +25,13 @@ import {
 } from '@mui/material';
 import {
   Save as SaveIcon,
-  CameraAlt as CameraIcon,
   Person as PersonIcon,
   Height as HeightIcon,
   MonitorWeight as WeightIcon,
-  Send as SendIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
 import { saveRecord, generateHealthId } from '../../utils/database';
-import { checkNetworkStatus } from '../../utils/network';
 import PhotoCapture from './PhotoCapture';
 import FormValidation from './FormValidation';
 
@@ -62,16 +58,13 @@ const steps = [
 ];
 
 const ChildForm = () => {
-  const navigate = useNavigate();
   const { 
     state, 
     updateFormField, 
     resetForm, 
-    addRecord, 
-    addPendingRecord,
+    addRecord,
     showNotification,
-    setLoading,
-    setRequiresAuthForSubmission
+    setLoading
   } = useAppContext();
 
   const [activeStep, setActiveStep] = useState(0);
@@ -104,44 +97,6 @@ const ChildForm = () => {
     const interval = setInterval(autoSave, 30000);
     return () => clearInterval(interval);
   }, [autoSave]);
-
-  // Restore temporary form data when returning from authentication
-  useEffect(() => {
-    if (state.isAuthenticated && state.requiresAuthForSubmission) {
-      const tempData = localStorage.getItem('childFormTempData');
-      if (tempData) {
-        try {
-          const parsedData = JSON.parse(tempData);
-          // Only restore if it was actually saved for submission
-          if (parsedData.tempSave) {
-            // Restore form data
-            Object.keys(parsedData).forEach(key => {
-              if (key !== 'tempSave' && key !== 'lastSaved') {
-                updateFormField(key, parsedData[key]);
-              }
-            });
-            
-            // Move to review step
-            setActiveStep(steps.length - 1);
-            
-            showNotification(
-              'Authentication successful! Your form data has been restored. You can now submit.',
-              'success'
-            );
-            
-            // Clean up temp data
-            localStorage.removeItem('childFormTempData');
-          }
-          
-          // Reset the submission requirement flag
-          setRequiresAuthForSubmission(false);
-        } catch (error) {
-          console.error('Failed to restore form data:', error);
-          showNotification('Authentication successful, but form data could not be restored.', 'warning');
-        }
-      }
-    }
-  }, [state.isAuthenticated, state.requiresAuthForSubmission, updateFormField, setRequiresAuthForSubmission, showNotification]);
 
   // Load draft on component mount
   useEffect(() => {
@@ -256,31 +211,6 @@ const ChildForm = () => {
       return;
     }
 
-    // Check if online and require authentication for online submissions
-    const isOnline = await checkNetworkStatus();
-    
-    if (isOnline && !state.isAuthenticated) {
-      // Set flag to indicate authentication is required for submission
-      setRequiresAuthForSubmission(true);
-      
-      showNotification(
-        'Authentication required for online submission. Redirecting to authentication...',
-        'info'
-      );
-      
-      // Store form data temporarily before redirecting
-      const tempFormData = {
-        ...state.currentForm,
-        tempSave: true,
-        lastSaved: new Date().toISOString()
-      };
-      localStorage.setItem('childFormTempData', JSON.stringify(tempFormData));
-      
-      // Redirect to authentication
-      navigate('/auth');
-      return;
-    }
-
     setIsSubmitting(true);
     setLoading(true);
 
@@ -317,19 +247,17 @@ const ChildForm = () => {
         ...state.currentForm,
         location,
         timestamp: new Date().toISOString(),
-        submittedBy: state.user?.nationalId || 'offline-user',
-        submitterName: state.user?.name || 'Offline User',
-        submissionMode: isOnline ? 'online' : 'offline'
+        submittedBy: 'offline-user',
+        submitterName: 'Offline User',
+        submissionMode: 'offline'
       };
 
       // Save to local database
       const savedRecord = await saveRecord(recordData);
       addRecord(savedRecord);
 
-      // Add to pending sync queue if online
-      if (isOnline) {
-        addPendingRecord(savedRecord);
-      }
+      // Records are stored locally for demo
+      console.log('Record saved locally:', savedRecord.id);
 
       // Clear draft and temp data
       localStorage.removeItem('childFormDraft');
@@ -345,12 +273,8 @@ const ChildForm = () => {
         'success'
       );
 
-      // Show sync status
-      if (isOnline) {
-        showNotification('Record queued for sync', 'info');
-      } else {
-        showNotification('Record saved offline. Will sync when online.', 'warning');
-      }
+      // Show offline status
+      showNotification('Record saved offline (demo mode)', 'info');
 
     } catch (error) {
       console.error('Failed to save record:', error);
@@ -573,22 +497,16 @@ const ChildForm = () => {
               Review Information
             </Typography>
             
-            {/* Authentication and submission status */}
+            {/* Submission status */}
             <Alert 
-              severity={state.isOnline ? (state.isAuthenticated ? "success" : "warning") : "info"} 
+              severity="info"
               sx={{ mb: 3 }}
             >
               <Typography variant="body2" fontWeight="bold" gutterBottom>
                 Submission Status
               </Typography>
               <Typography variant="body2">
-                {state.isOnline ? (
-                  state.isAuthenticated ? 
-                    "✅ Online & Authenticated - Your submission will be processed immediately" :
-                    "⚠️ Online but not authenticated - You'll be asked to authenticate when you submit"
-                ) : (
-                  "📴 Offline - Your submission will be saved locally and synced when online"
-                )}
+                📱 Your submission will be saved locally for offline access
               </Typography>
             </Alert>
             
@@ -663,18 +581,6 @@ const ChildForm = () => {
         />
         
         <CardContent>
-          {!state.isAuthenticated && (
-            <Alert severity="info" sx={{ mb: 3 }}>
-              <Typography variant="body2" fontWeight="bold" gutterBottom>
-                Authentication Information
-              </Typography>
-              <Typography variant="body2">
-                You can fill out the form without authentication. When you submit the form while online, 
-                you'll be asked to authenticate for security purposes. Offline submissions don't require authentication.
-              </Typography>
-            </Alert>
-          )}
-          
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
             {steps.map((label) => (
               <Step key={label}>

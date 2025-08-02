@@ -359,8 +359,8 @@ const SettingsPage = () => {
             
             <ListItem>
               <ListItemText
-                primary="eSignet Authentication"
-                secondary="Secure authentication via National ID"
+                primary="Simple Authentication"
+                secondary="Username/password authentication"
               />
               <ListItemSecondaryAction>
                 <Chip label="Active" color="success" size="small" />
