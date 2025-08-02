@@ -45,8 +45,7 @@ const AuthPage = () => {
   ];
 
   const validateNationalId = (id) => {
-    // Mock validation - in real implementation, this would be more sophisticated
-    return id.length >= 10 && /^\d+$/.test(id);
+    return id.length === 10 && /^\d+$/.test(id);
   };
 
   const handleRequestOtp = async () => {
@@ -66,7 +65,7 @@ const AuthPage = () => {
     }
     
     if (!validateNationalId(nationalId)) {
-      setError('Please enter a valid National ID (minimum 10 digits)');
+      setError('Please enter a valid 10-digit National ID');
       return;
     }
 
@@ -178,7 +177,7 @@ const AuthPage = () => {
               fullWidth
               label="National ID"
               value={nationalId}
-              onChange={(e) => setNationalId(e.target.value)}
+              onChange={(e) => setNationalId(e.target.value.slice(0, 10))}
               placeholder="Enter your National ID"
               disabled={state.isLoading}
               InputProps={{
@@ -341,7 +340,7 @@ const AuthPage = () => {
                 Demo Mode
               </Typography>
               <Typography variant="body2">
-                This is a mock eSignet implementation. Use any 10+ digit number as National ID.
+                This is a mock eSignet implementation. Use any 10-digit number as National ID.
                 The OTP will be displayed in the browser console and as a notification.
               </Typography>
             </Alert>
