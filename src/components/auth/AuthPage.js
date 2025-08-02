@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -24,8 +25,10 @@ import {
 } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
 import { mockESignetAuth } from '../../utils/mockAuth';
+import { checkNetworkStatus } from '../../utils/network';
 
 const AuthPage = () => {
+  const navigate = useNavigate();
   const { setAuthenticated, showNotification, setLoading, state } = useAppContext();
   
   const [activeStep, setActiveStep] = useState(0);
@@ -48,6 +51,19 @@ const AuthPage = () => {
 
   const handleRequestOtp = async () => {
     setError('');
+    
+    // Check if device is online
+    if (!state.isOnline) {
+      setError('Authentication requires an internet connection. Please connect to the internet and try again.');
+      return;
+    }
+
+    // Double-check network connectivity
+    const hasConnection = await checkNetworkStatus();
+    if (!hasConnection) {
+      setError('No internet connection detected. Authentication requires a stable internet connection.');
+      return;
+    }
     
     if (!validateNationalId(nationalId)) {
       setError('Please enter a valid National ID (minimum 10 digits)');
@@ -87,6 +103,19 @@ const AuthPage = () => {
   const handleVerifyOtp = async () => {
     setError('');
     
+    // Check if device is online
+    if (!state.isOnline) {
+      setError('Authentication requires an internet connection. Please connect to the internet and try again.');
+      return;
+    }
+
+    // Double-check network connectivity
+    const hasConnection = await checkNetworkStatus();
+    if (!hasConnection) {
+      setError('No internet connection detected. Authentication requires a stable internet connection.');
+      return;
+    }
+    
     if (!otp || otp.length !== 6) {
       setError('Please enter a valid 6-digit OTP');
       return;
@@ -105,10 +134,19 @@ const AuthPage = () => {
         
         showNotification('Authentication successful!', 'success');
         
-        // Redirect to form after a short delay
-        setTimeout(() => {
-          // Navigation will be handled by App component due to route protection
-        }, 1500);
+        // Check if authentication was required for form submission
+        const tempFormData = localStorage.getItem('childFormTempData');
+        if (tempFormData) {
+          // Redirect back to form to complete submission
+          setTimeout(() => {
+            navigate('/form');
+          }, 1500);
+        } else {
+          // Regular authentication, redirect to form after delay
+          setTimeout(() => {
+            navigate('/form');
+          }, 1500);
+        }
       } else {
         setError(response.message || 'Invalid OTP');
       }
@@ -269,6 +307,17 @@ const AuthPage = () => {
         />
         
         <CardContent>
+          {!state.isOnline && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              <Typography variant="body2" fontWeight="bold" gutterBottom>
+                No Internet Connection
+              </Typography>
+              <Typography variant="body2">
+                Authentication requires an internet connection. Please connect to the internet to proceed with authentication.
+              </Typography>
+            </Alert>
+          )}
+          
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
             {steps.map((label) => (
               <Step key={label}>

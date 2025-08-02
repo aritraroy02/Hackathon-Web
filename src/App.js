@@ -13,6 +13,7 @@ import OfflineIndicator from './components/common/OfflineIndicator';
 import InstallPrompt from './components/common/InstallPrompt';
 import { useAppContext } from './contexts/AppContext';
 import { checkNetworkStatus } from './utils/network';
+import { initializeDatabase } from './utils/database';
 
 function App() {
   const { 
@@ -25,6 +26,22 @@ function App() {
   const [networkStatus, setNetworkStatus] = useState(navigator.onLine);
 
   useEffect(() => {
+    // Initialize databases
+    const initializeDatabases = async () => {
+      try {
+        // Initialize IndexedDB for offline storage
+        await initializeDatabase();
+        console.log('IndexedDB initialized');
+
+        // Backend connection will be checked when needed via API calls
+        console.log('Frontend will connect to backend API when online');
+      } catch (error) {
+        console.error('Database initialization failed:', error);
+      }
+    };
+
+    initializeDatabases();
+
     // Network status monitoring
     const updateNetworkStatus = () => {
       const isOnline = navigator.onLine;
@@ -101,16 +118,7 @@ function App() {
       >
         <Routes>
           <Route path="/" element={<Navigate to="/form" replace />} />
-          <Route 
-            path="/form" 
-            element={
-              state.isAuthenticated ? (
-                <ChildForm />
-              ) : (
-                <Navigate to="/auth" replace />
-              )
-            } 
-          />
+          <Route path="/form" element={<ChildForm />} />
           <Route 
             path="/records" 
             element={

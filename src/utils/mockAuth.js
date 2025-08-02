@@ -1,9 +1,12 @@
 /**
- * Mock eSignet Authentication Service
- * This simulates the eSignet authentication flow for demonstration purposes
+ * Enhanced Authentication Service
+ * Uses MongoDB when online, falls back to mock for offline/demo
  */
 
-// Simulate network delay
+import { requestOtp as mongoRequestOtp, verifyOtp as mongoVerifyOtp } from './mongoAuth';
+import { checkNetworkStatus } from './network';
+
+// Simulate network delay for mock auth
 const simulateNetworkDelay = (min = 1000, max = 3000) => {
   const delay = Math.random() * (max - min) + min;
   return new Promise(resolve => setTimeout(resolve, delay));
@@ -38,17 +41,67 @@ const mockUsers = {
 let otpStore = {};
 
 /**
- * Mock eSignet Authentication Class
+ * Enhanced Authentication Class
  */
-class MockESignetAuth {
+class EnhancedAuth {
   constructor() {
     this.baseUrl = '/api/esignet'; // Mock API endpoint
   }
 
   /**
    * Request OTP for National ID
+   * Uses MongoDB when online, mock when offline
    */
   async requestOtp(nationalId) {
+    try {
+      // Check if we should use MongoDB (online) or mock (offline)
+      const isOnline = navigator.onLine && await checkNetworkStatus();
+      
+      if (isOnline) {
+        // Use MongoDB authentication
+        console.log('Using MongoDB authentication');
+        return await mongoRequestOtp(nationalId);
+      } else {
+        // Use mock authentication for offline demo
+        console.log('Using mock authentication (offline mode)');
+        return await this.mockRequestOtp(nationalId);
+      }
+    } catch (error) {
+      console.error('Authentication request failed:', error);
+      // Fallback to mock if MongoDB fails
+      return await this.mockRequestOtp(nationalId);
+    }
+  }
+
+  /**
+   * Verify OTP
+   * Uses MongoDB when online, mock when offline
+   */
+  async verifyOtp(nationalId, otp) {
+    try {
+      // Check if we should use MongoDB (online) or mock (offline)
+      const isOnline = navigator.onLine && await checkNetworkStatus();
+      
+      if (isOnline) {
+        // Use MongoDB authentication
+        console.log('Using MongoDB verification');
+        return await mongoVerifyOtp(nationalId, otp);
+      } else {
+        // Use mock authentication for offline demo
+        console.log('Using mock verification (offline mode)');
+        return await this.mockVerifyOtp(nationalId, otp);
+      }
+    } catch (error) {
+      console.error('Authentication verification failed:', error);
+      // Fallback to mock if MongoDB fails
+      return await this.mockVerifyOtp(nationalId, otp);
+    }
+  }
+
+  /**
+   * Mock OTP request for offline/demo mode
+   */
+  async mockRequestOtp(nationalId) {
     console.log('eSignet: Requesting OTP for', nationalId);
     
     // Simulate network delay
@@ -98,9 +151,9 @@ class MockESignetAuth {
   }
 
   /**
-   * Verify OTP
+   * Mock OTP verification for offline/demo mode
    */
-  async verifyOtp(nationalId, otp) {
+  async mockVerifyOtp(nationalId, otp) {
     console.log('eSignet: Verifying OTP for', nationalId);
     
     // Simulate network delay
@@ -273,7 +326,7 @@ class MockESignetAuth {
 }
 
 // Export singleton instance
-export const mockESignetAuth = new MockESignetAuth();
+export const mockESignetAuth = new EnhancedAuth();
 
 // Export utilities for testing
 export const testUtils = {

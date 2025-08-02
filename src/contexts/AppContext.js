@@ -6,6 +6,7 @@ const initialState = {
   isAuthenticated: false,
   user: null,
   authToken: null,
+  requiresAuthForSubmission: false,
   
   // Form data
   currentForm: {
@@ -57,6 +58,7 @@ export const actionTypes = {
   SET_AUTHENTICATED: 'SET_AUTHENTICATED',
   SET_USER: 'SET_USER',
   SET_AUTH_TOKEN: 'SET_AUTH_TOKEN',
+  SET_REQUIRES_AUTH_FOR_SUBMISSION: 'SET_REQUIRES_AUTH_FOR_SUBMISSION',
   LOGOUT: 'LOGOUT',
   
   // Form
@@ -107,12 +109,19 @@ const appReducer = (state, action) => {
         authToken: action.payload
       };
       
+    case actionTypes.SET_REQUIRES_AUTH_FOR_SUBMISSION:
+      return {
+        ...state,
+        requiresAuthForSubmission: action.payload
+      };
+      
     case actionTypes.LOGOUT:
       return {
         ...state,
         isAuthenticated: false,
         user: null,
         authToken: null,
+        requiresAuthForSubmission: false,
         currentForm: initialState.currentForm
       };
       
@@ -325,6 +334,10 @@ export const AppProvider = ({ children }) => {
     dispatch({ type: actionTypes.UPDATE_SETTINGS, payload: newSettings });
   }, []);
 
+  const setRequiresAuthForSubmission = useCallback((requires) => {
+    dispatch({ type: actionTypes.SET_REQUIRES_AUTH_FOR_SUBMISSION, payload: requires });
+  }, []);
+
   const value = {
     state,
     dispatch,
@@ -341,7 +354,8 @@ export const AppProvider = ({ children }) => {
     logout,
     setLoading,
     setSyncing,
-    updateSettings
+    updateSettings,
+    setRequiresAuthForSubmission
   };
 
   return (
