@@ -21,6 +21,7 @@ import {
   MenuItem,
   Chip,
   OutlinedInput,
+  FormHelperText,
   Divider
 } from '@mui/material';
 import {
@@ -143,27 +144,33 @@ const ChildForm = () => {
         if (!state.currentForm.childName.trim()) {
           newErrors.childName = 'Child name is required';
         }
-        if (!state.currentForm.age || state.currentForm.age < 0 || state.currentForm.age > 18) {
-          newErrors.age = 'Age must be between 0 and 18 years';
+        if (!state.currentForm.age || isNaN(parseFloat(state.currentForm.age)) || parseFloat(state.currentForm.age) < 0 || parseFloat(state.currentForm.age) > 18) {
+          newErrors.age = 'Age must be a valid number between 0 and 18 years';
+        }
+        if (!state.currentForm.gender) {
+          newErrors.gender = 'Gender is required';
         }
         break;
-        
+
       case 1: // Physical Measurements
-        if (!state.currentForm.weight || state.currentForm.weight <= 0) {
-          newErrors.weight = 'Weight is required and must be positive';
+        if (!state.currentForm.weight || isNaN(parseFloat(state.currentForm.weight)) || parseFloat(state.currentForm.weight) <= 0) {
+          newErrors.weight = 'Weight must be a valid positive number';
         }
-        if (!state.currentForm.height || state.currentForm.height <= 0) {
-          newErrors.height = 'Height is required and must be positive';
+        if (!state.currentForm.height || isNaN(parseFloat(state.currentForm.height)) || parseFloat(state.currentForm.height) <= 0) {
+          newErrors.height = 'Height must be a valid positive number';
         }
-        break;
-        
-      case 2: // Health Assessment
+        break;      case 2: // Health Assessment
         // Optional validation for malnutrition signs
         break;
         
       case 3: // Guardian Information
         if (!state.currentForm.guardianName.trim()) {
           newErrors.guardianName = 'Guardian name is required';
+        }
+        if (!state.currentForm.phone.trim()) {
+          newErrors.phone = 'Phone number is required';
+        } else if (!/^\+?[\d\s\-\(\)]{10,}$/.test(state.currentForm.phone.trim())) {
+          newErrors.phone = 'Please enter a valid phone number';
         }
         if (!state.currentForm.parentalConsent) {
           newErrors.parentalConsent = 'Parental consent is required';
@@ -244,28 +251,28 @@ const ChildForm = () => {
       // Prepare record data with user information matching the required schema
       const recordData = {
         // Child Information
-        childName: state.currentForm.childName,
-        age: state.currentForm.age,
-        gender: state.currentForm.gender,
-        weight: state.currentForm.weight,
-        height: state.currentForm.height,
+        childName: String(state.currentForm.childName).trim(),
+        age: String(state.currentForm.age),
+        gender: String(state.currentForm.gender),
+        weight: String(state.currentForm.weight),
+        height: String(state.currentForm.height),
         
         // Guardian Information
-        guardianName: state.currentForm.guardianName,
-        relation: state.currentForm.relation || 'Parent',
-        phone: state.currentForm.phone,
-        parentsConsent: state.currentForm.parentalConsent || false,
+        guardianName: String(state.currentForm.guardianName).trim(),
+        relation: String(state.currentForm.relation || 'Parent'),
+        phone: String(state.currentForm.phone).trim(),
+        parentsConsent: Boolean(state.currentForm.parentalConsent),
         
         // Health Information
-        healthId: state.currentForm.healthId,
-        facePhoto: state.currentForm.photo,
+        healthId: String(state.currentForm.healthId),
+        facePhoto: state.currentForm.photo || null,
         localId: `LOC${Date.now().toString().slice(-6)}`,
-        idType: state.currentForm.idType || 'aadhar',
-        countryCode: state.currentForm.countryCode || '+91',
+        idType: String(state.currentForm.idType || 'aadhar'),
+        countryCode: String(state.currentForm.countryCode || '+91'),
         malnutritionSigns: Array.isArray(state.currentForm.malnutritionSigns) 
           ? state.currentForm.malnutritionSigns.join(', ')
-          : state.currentForm.malnutritionSigns || '',
-        recentIllnesses: state.currentForm.recentIllnesses || '',
+          : String(state.currentForm.malnutritionSigns || ''),
+        recentIllnesses: String(state.currentForm.recentIllnesses || ''),
         skipMalnutrition: false,
         skipIllnesses: false,
         
@@ -278,7 +285,7 @@ const ChildForm = () => {
         
         // Upload tracking (if authenticated)
         ...(isAuthenticated && user && {
-          uploadedBy: user.name || `${user.firstName} ${user.lastName}`,
+          uploadedBy: String(user.name || `${user.firstName} ${user.lastName}`),
           uploaderUIN: user.uin,
           uploaderEmployeeId: user.employeeId,
           uploadedAt: new Date().toISOString()
@@ -362,6 +369,22 @@ const ChildForm = () => {
                 required
                 inputProps={{ min: 0, max: 18, step: 0.1 }}
               />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required error={!!errors.gender}>
+                <InputLabel>Gender</InputLabel>
+                <Select
+                  value={state.currentForm.gender}
+                  onChange={(e) => updateFormField('gender', e.target.value)}
+                  label="Gender"
+                >
+                  <MenuItem value="Male">Male</MenuItem>
+                  <MenuItem value="Female">Female</MenuItem>
+                  <MenuItem value="Other">Other</MenuItem>
+                </Select>
+                {errors.gender && <FormHelperText>{errors.gender}</FormHelperText>}
+              </FormControl>
             </Grid>
             
             <Grid item xs={12} sm={6}>
@@ -497,6 +520,20 @@ const ChildForm = () => {
                 error={!!errors.guardianName}
                 helperText={errors.guardianName}
                 required
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                type="tel"
+                value={state.currentForm.phone}
+                onChange={(e) => updateFormField('phone', e.target.value)}
+                error={!!errors.phone}
+                helperText={errors.phone}
+                required
+                placeholder="Enter parent/guardian's phone number"
               />
             </Grid>
             

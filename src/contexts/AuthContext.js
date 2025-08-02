@@ -11,7 +11,10 @@ const initialState = {
 
 const mockUser = {
   uinNumber: "1234567890",
+  uin: "1234567890", // Add uin property for upload service
   name: "ARITRADITYA ROY",
+  firstName: "ARITRADITYA",
+  lastName: "ROY",
   email: "aritraditya.roy@gmail.com",
   phone: "+91-9876543210",
   address: "123 Main Street, New Delhi, Delhi 110001",
@@ -22,7 +25,8 @@ const mockUser = {
   employeeId: "HW-567890",
   role: "health_worker",
   department: "Child Health Services",
-  designation: "Senior Health Worker"
+  designation: "Senior Health Worker",
+  token: "demo-token" // Add token for authentication
 };
 
 const authReducer = (state, action) => {

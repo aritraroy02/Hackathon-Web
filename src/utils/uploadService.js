@@ -2,8 +2,8 @@
  * Backend API service for uploading data to MongoDB via Google Cloud
  */
 
-// Configuration - Update these URLs after deployment
-const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://child-health-backend-747316458447.us-central1.run.app';
+// Configuration - Use Google Cloud backend with full CORS support
+const BACKEND_BASE_URL = 'https://child-health-backend-747316458447.us-central1.run.app';
 
 // Note: MongoDB URI is now securely stored on the backend server
 // The frontend no longer needs direct MongoDB access
@@ -16,16 +16,35 @@ const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://child-hea
  */
 export const uploadChildRecord = async (record, user) => {
   try {
+    // Validate user object
+    if (!user) {
+      throw new Error('User authentication required for upload');
+    }
+
     // Prepare the record with upload metadata
+    const cleanRecord = { ...record };
+    delete cleanRecord._id; // Remove IndexedDB _id
+    delete cleanRecord.id; // Remove any id field
+    delete cleanRecord.__v; // Remove MongoDB version field
+    
     const recordWithUploadInfo = {
-      ...record,
-      uploadedBy: user.name || user.firstName + ' ' + user.lastName,
-      uploaderUIN: user.uin,
-      uploaderEmployeeId: user.employeeId,
+      ...cleanRecord,
+      uploadedBy: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
+      uploaderUIN: user.uin || user.uinNumber || 'UNKNOWN_UIN',
+      uploaderEmployeeId: user.employeeId || 'UNKNOWN_EMP',
       uploadedAt: new Date().toISOString(),
       isOffline: false, // Mark as uploaded
       uploadStatus: 'uploaded'
     };
+
+    console.log('Uploading record to:', `${BACKEND_BASE_URL}/api/children`);
+    console.log('User data:', {
+      name: user.name,
+      uin: user.uin || user.uinNumber,
+      employeeId: user.employeeId,
+      hasToken: !!user.token
+    });
+    console.log('Record data:', JSON.stringify(recordWithUploadInfo, null, 2));
 
     const response = await fetch(`${BACKEND_BASE_URL}/api/children`, {
       method: 'POST',
@@ -36,12 +55,17 @@ export const uploadChildRecord = async (record, user) => {
       body: JSON.stringify(recordWithUploadInfo)
     });
 
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorData = await response.text();
+      console.error('Upload error response:', errorData);
       throw new Error(`Upload failed: ${response.status} - ${errorData}`);
     }
 
     const result = await response.json();
+    console.log('Upload success:', result);
     return {
       success: true,
       data: result,
@@ -65,7 +89,43 @@ export const uploadChildRecord = async (record, user) => {
  * @returns {Promise<Object>} batch upload result
  */
 export const uploadRecordsBatch = async (records, user, onProgress = null) => {
+  console.log('🚀 Starting batch upload...');
+  console.log('Records count:', records.length);
+  console.log('User data:', {
+    name: user?.name,
+    uin: user?.uin || user?.uinNumber,
+    employeeId: user?.employeeId,
+    hasToken: !!user?.token
+  });
+
   try {
+    // Validate inputs
+    if (!records || records.length === 0) {
+      throw new Error('No records to upload');
+    }
+
+    if (!user) {
+      throw new Error('User authentication required for upload');
+    }
+
+    const recordsWithMetadata = records.map(record => {
+      // Remove any fields that might cause MongoDB validation issues
+      const cleanRecord = { ...record };
+      delete cleanRecord._id; // Remove IndexedDB _id
+      delete cleanRecord.id; // Remove any id field
+      delete cleanRecord.__v; // Remove MongoDB version field
+      
+      return {
+        ...cleanRecord,
+        uploadedBy: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
+        uploaderUIN: user.uin || user.uinNumber || 'UNKNOWN_UIN',
+        uploaderEmployeeId: user.employeeId || 'UNKNOWN_EMP',
+        uploadedAt: new Date().toISOString()
+      };
+    });
+
+    console.log('First record with metadata:', recordsWithMetadata[0]);
+
     // Use the dedicated batch upload endpoint for better performance
     const response = await fetch(`${BACKEND_BASE_URL}/api/children/batch`, {
       method: 'POST',
@@ -74,22 +134,20 @@ export const uploadRecordsBatch = async (records, user, onProgress = null) => {
         'Authorization': `Bearer ${user.token || 'demo-token'}`
       },
       body: JSON.stringify({
-        records: records.map(record => ({
-          ...record,
-          uploadedBy: user.name || `${user.firstName} ${user.lastName}`,
-          uploaderUIN: user.uin,
-          uploaderEmployeeId: user.employeeId,
-          uploadedAt: new Date().toISOString()
-        }))
+        records: recordsWithMetadata
       })
     });
 
+    console.log('Batch upload response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.text();
+      console.error('Batch upload error response:', errorData);
       throw new Error(`Batch upload failed: ${response.status} - ${errorData}`);
     }
 
     const result = await response.json();
+    console.log('Batch upload result:', result);
     
     // Simulate progress for UI feedback
     if (onProgress) {

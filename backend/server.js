@@ -17,17 +17,30 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('combined'));
 
-// CORS configuration
+// CORS configuration - Allow ALL origins and methods
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'https://your-frontend-domain.com',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: true, // Allow all origins
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'Access-Control-Allow-Origin'],
+  exposedHeaders: ['Access-Control-Allow-Origin']
 };
 app.use(cors(corsOptions));
+
+// Additional CORS headers middleware (backup)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  
+  // Respond to preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 // Rate limiting - Disabled for development, allows all IPs
 const limiter = rateLimit({
@@ -209,10 +222,23 @@ app.post('/api/children', async (req, res) => {
     // Check if healthId already exists
     const existingRecord = await ChildHealthRecord.findOne({ healthId: req.body.healthId });
     if (existingRecord) {
-      return res.status(409).json({
-        success: false,
-        message: 'Health ID already exists',
-        healthId: req.body.healthId
+      // Update existing record instead of failing
+      const updatedRecord = await ChildHealthRecord.findOneAndUpdate(
+        { healthId: req.body.healthId },
+        { 
+          ...req.body,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+      
+      console.log(`🔄 Updated existing child record: ${updatedRecord.healthId} by ${updatedRecord.uploadedBy}`);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Child record updated successfully',
+        data: updatedRecord,
+        _updateType: 'updated'
       });
     }
     
@@ -398,9 +424,18 @@ app.post('/api/children/batch', async (req, res) => {
         // Check if healthId already exists
         const existing = await ChildHealthRecord.findOne({ healthId: record.healthId });
         if (existing) {
-          results.failed.push({
-            record: record,
-            error: 'Health ID already exists'
+          // Instead of failing, update the existing record with new data
+          const updatedRecord = await ChildHealthRecord.findOneAndUpdate(
+            { healthId: record.healthId },
+            { 
+              ...record,
+              updatedAt: new Date()
+            },
+            { new: true }
+          );
+          results.successful.push({
+            ...updatedRecord.toObject(),
+            _updateType: 'updated' // Mark as updated instead of created
           });
           continue;
         }
