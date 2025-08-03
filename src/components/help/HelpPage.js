@@ -167,8 +167,8 @@ const HelpPage = () => {
   ];
 
   const supportInfo = {
-    phone: '+91-1800-XXX-XXXX',
-    email: 'support@childhealthpwa.gov.in',
+    phone: '+91-9392351645',
+    email: 'aritraditya.roy@gmail.com',
     hours: 'Monday to Friday, 9:00 AM - 6:00 PM IST'
   };
 

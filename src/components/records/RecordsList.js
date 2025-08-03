@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -33,7 +33,6 @@ import {
   Search as SearchIcon,
   Person as PersonIcon,
   Visibility as ViewIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
   FilterList as FilterIcon,
@@ -48,7 +47,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAllRecords, deleteRecord } from '../../utils/database';
-import { uploadRecordsBatch, testBackendConnection } from '../../utils/uploadService';
+import { uploadRecordsBatch } from '../../utils/uploadService';
 import { checkInternetConnectivity } from '../../utils/networkUtils';
 
 const RecordsList = () => {
@@ -71,17 +70,7 @@ const RecordsList = () => {
     ageGroup: 'all' // 'all', 'infant', 'toddler', 'child', 'teen'
   });
 
-  // Load records on component mount
-  useEffect(() => {
-    loadRecords();
-  }, []);
-
-  // Filter records when search term or filters change
-  useEffect(() => {
-    filterRecords();
-  }, [records, searchTerm, filters]);
-
-  const loadRecords = async () => {
+  const loadRecords = useCallback(async () => {
     try {
       const allRecords = await getAllRecords();
       setRecords(allRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
@@ -89,9 +78,9 @@ const RecordsList = () => {
       console.error('Failed to load records:', error);
       showNotification('Failed to load records', 'error');
     }
-  };
+  }, [showNotification]);
 
-  const filterRecords = () => {
+  const filterRecords = useCallback(() => {
     let filtered = records;
 
     // Text search
@@ -160,7 +149,17 @@ const RecordsList = () => {
     }
 
     setFilteredRecords(filtered);
-  };
+  }, [records, searchTerm, filters, state.isOnline]);
+
+  // Load records on component mount
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords]);
+
+  // Filter records when search term or filters change
+  useEffect(() => {
+    filterRecords();
+  }, [filterRecords]);
 
   const handleViewRecord = (record) => {
     setSelectedRecord(record);
