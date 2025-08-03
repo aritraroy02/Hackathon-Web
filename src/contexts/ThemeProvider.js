@@ -64,7 +64,7 @@ const CustomThemeProvider = ({ children }) => {
         fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
       },
     });
-  }, [state?.settings?.theme, prefersDarkMode]);
+  }, [state?.settings?.theme, prefersDarkMode, state]);
 
   // Don't render until state is initialized
   if (!state) {

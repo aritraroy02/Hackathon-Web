@@ -255,7 +255,7 @@ export const cacheImportantResources = async () => {
   return false;
 };
 
-export default {
+const serviceWorkerUtils = {
   registerSW,
   unregisterSW,
   checkForUpdate,
@@ -267,3 +267,5 @@ export default {
   clearAllCaches,
   cacheImportantResources
 };
+
+export default serviceWorkerUtils;

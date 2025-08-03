@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -42,9 +42,9 @@ const ProfileModal = ({ open, onClose }) => {
       handleFetchLocation();
       setLocationFetchRequested(true);
     }
-  }, [open, user]);
+  }, [open, user, handleFetchLocation, locationFetchRequested, state.currentLocation]);
 
-  const handleFetchLocation = async () => {
+  const handleFetchLocation = useCallback(async () => {
     if (!state.isOnline) {
       showNotification('Internet connection required for location services', 'warning');
       return;
@@ -98,7 +98,7 @@ const ProfileModal = ({ open, onClose }) => {
     } finally {
       setLocationLoading(false);
     }
-  };
+  }, [state.isOnline, showNotification, setLocation]);
 
   const handleLogout = () => {
     logout();

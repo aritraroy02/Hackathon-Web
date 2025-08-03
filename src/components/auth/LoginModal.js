@@ -43,7 +43,7 @@ const LoginModal = ({ open, onClose }) => {
       setErrors({});
       clearError();
     }
-  }, [open]); // Removed clearError from dependency array
+  }, [open, clearError]); // Added clearError to dependency array
 
   const validateUin = () => {
     const newErrors = {};

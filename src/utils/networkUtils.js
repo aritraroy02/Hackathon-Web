@@ -20,13 +20,13 @@ export const checkInternetConnectivity = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     
-    const response = await fetch('https://www.google.com/favicon.ico', {
+    await fetch('https://www.google.com/favicon.ico', {
       method: 'HEAD',
       mode: 'no-cors',
       signal: controller.signal
     });
     
-    clearTimeout(timeoutId);
+          clearTimeout(timeoutHandler);
     return true;
   } catch (error) {
     console.log('Internet connectivity check failed:', error.message);
@@ -52,7 +52,7 @@ export const waitForConnection = (timeout = 30000) => {
       }
     };
 
-    const timeoutId = setTimeout(() => {
+    const timeoutHandler = setTimeout(() => {
       window.removeEventListener('online', checkConnection);
       resolve(false);
     }, timeout);

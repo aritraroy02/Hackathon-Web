@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
   CardContent,
   Typography,
   Switch,
-  FormControlLabel,
   FormControl,
   InputLabel,
   Select,
@@ -20,14 +19,12 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  Divider,
   Chip,
   Grid
 } from '@mui/material';
 import {
   Storage as StorageIcon,
   Security as SecurityIcon,
-  Language as LanguageIcon,
   Palette as ThemeIcon,
   Camera as CameraIcon,
   Sync as SyncIcon,
@@ -52,9 +49,9 @@ const SettingsPage = () => {
     loadStorageInfo();
     loadDatabaseStats();
     loadSavedSettings();
-  }, []);
+  }, [loadSavedSettings]);
 
-  const loadSavedSettings = async () => {
+  const loadSavedSettings = useCallback(async () => {
     try {
       const savedSettings = await getSettings();
       if (savedSettings) {
@@ -64,7 +61,7 @@ const SettingsPage = () => {
     } catch (error) {
       console.error('Failed to load settings:', error);
     }
-  };
+  }, [updateSettings]);
 
   const loadStorageInfo = async () => {
     try {
