@@ -691,12 +691,15 @@ const ChildForm = () => {
                 <Typography variant="body1">{state.currentForm.guardianName}</Typography>
               </Grid>
               
-              {state.currentForm.malnutritionSigns.length > 0 && (
+              {state.currentForm.malnutritionSigns && state.currentForm.malnutritionSigns.length > 0 && (
                 <Grid item xs={12}>
                   <Typography variant="body2" color="text.secondary">Malnutrition Signs</Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                    {state.currentForm.malnutritionSigns.map((sign) => (
-                      <Chip key={sign} label={sign} size="small" variant="outlined" />
+                    {(Array.isArray(state.currentForm.malnutritionSigns) 
+                      ? state.currentForm.malnutritionSigns 
+                      : []
+                    ).map((sign, index) => (
+                      <Chip key={index} label={sign} size="small" variant="outlined" />
                     ))}
                   </Box>
                 </Grid>

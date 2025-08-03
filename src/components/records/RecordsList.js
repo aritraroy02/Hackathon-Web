@@ -510,9 +510,9 @@ const RecordsList = () => {
             <Card key={record.id} sx={{ mb: 1 }}>
               <ListItem alignItems="flex-start">
                 <ListItemAvatar>
-                  {record.photo ? (
+                  {(record.photo || record.facePhoto) ? (
                     <Avatar
-                      src={record.photo}
+                      src={record.photo || record.facePhoto}
                       alt={record.childName}
                       sx={{ width: 56, height: 56 }}
                     />
@@ -678,6 +678,26 @@ const RecordsList = () => {
             </DialogTitle>
             <DialogContent>
               <Grid container spacing={2}>
+                {/* Photo Display */}
+                {(selectedRecord.photo || selectedRecord.facePhoto) && (
+                  <Grid item xs={12} sx={{ textAlign: 'center', mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Child Photo
+                    </Typography>
+                    <Avatar
+                      src={selectedRecord.photo || selectedRecord.facePhoto}
+                      alt={selectedRecord.childName}
+                      sx={{ 
+                        width: 120, 
+                        height: 120, 
+                        mx: 'auto',
+                        border: '2px solid',
+                        borderColor: 'primary.main'
+                      }}
+                    />
+                  </Grid>
+                )}
+                
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="text.secondary">Health ID</Typography>
                   <Typography variant="body1">{selectedRecord.healthId}</Typography>
@@ -687,6 +707,10 @@ const RecordsList = () => {
                   <Typography variant="body1">{selectedRecord.age} years</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">Gender</Typography>
+                  <Typography variant="body1">{selectedRecord.gender || 'Not specified'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="text.secondary">Weight</Typography>
                   <Typography variant="body1">{selectedRecord.weight} kg</Typography>
                 </Grid>
@@ -694,18 +718,33 @@ const RecordsList = () => {
                   <Typography variant="body2" color="text.secondary">Height</Typography>
                   <Typography variant="body1">{selectedRecord.height} cm</Typography>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="text.secondary">Guardian</Typography>
                   <Typography variant="body1">{selectedRecord.guardianName}</Typography>
                 </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">Phone</Typography>
+                  <Typography variant="body1">{selectedRecord.phone || 'Not provided'}</Typography>
+                </Grid>
                 
-                {selectedRecord.malnutritionSigns && selectedRecord.malnutritionSigns.length > 0 && (
+                {selectedRecord.malnutritionSigns && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="text.secondary">Malnutrition Signs</Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                      {selectedRecord.malnutritionSigns.map((sign) => (
-                        <Chip key={sign} label={sign} size="small" variant="outlined" />
+                      {(Array.isArray(selectedRecord.malnutritionSigns) 
+                        ? selectedRecord.malnutritionSigns 
+                        : selectedRecord.malnutritionSigns 
+                          ? [selectedRecord.malnutritionSigns] 
+                          : []
+                      ).map((sign, index) => (
+                        <Chip key={index} label={sign} size="small" variant="outlined" />
                       ))}
+                      {(!selectedRecord.malnutritionSigns || 
+                        (Array.isArray(selectedRecord.malnutritionSigns) && selectedRecord.malnutritionSigns.length === 0)) && (
+                        <Typography variant="body2" color="textSecondary">
+                          No malnutrition signs recorded
+                        </Typography>
+                      )}
                     </Box>
                   </Grid>
                 )}
