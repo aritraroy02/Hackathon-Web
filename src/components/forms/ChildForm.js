@@ -76,6 +76,14 @@ const ChildForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState('');
 
+  const hasFormData = useCallback(() => {
+    return state.currentForm.childName || 
+           state.currentForm.age || 
+           state.currentForm.weight || 
+           state.currentForm.height ||
+           state.currentForm.guardianName;
+  }, [state.currentForm.childName, state.currentForm.age, state.currentForm.weight, state.currentForm.height, state.currentForm.guardianName]);
+
   // Auto-save functionality
   const autoSave = useCallback(async () => {
     if (state.settings.autoSave && hasFormData()) {
@@ -94,7 +102,7 @@ const ChildForm = () => {
         console.error('Auto-save failed:', error);
       }
     }
-  }, [state.currentForm, state.settings.autoSave]);
+  }, [state.currentForm, state.settings.autoSave, hasFormData]);
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -102,7 +110,7 @@ const ChildForm = () => {
     return () => clearInterval(interval);
   }, [autoSave]);
 
-  // Load draft on component mount
+  // Load draft and auto-generate Health ID on component mount
   useEffect(() => {
     const loadDraft = () => {
       try {
@@ -126,15 +134,24 @@ const ChildForm = () => {
     };
 
     loadDraft();
-  }, [updateFormField, showNotification]);
+    
+    // Auto-generate Health ID if not already present
+    if (!state.currentForm.healthId) {
+      const autoHealthId = generateHealthId('NEW', new Date().toISOString());
+      updateFormField('healthId', autoHealthId);
+    }
+  }, [updateFormField, showNotification, state.currentForm.healthId]);
 
-  const hasFormData = () => {
-    return state.currentForm.childName || 
-           state.currentForm.age || 
-           state.currentForm.weight || 
-           state.currentForm.height ||
-           state.currentForm.guardianName;
-  };
+  // Auto-regenerate Health ID when child name changes
+  useEffect(() => {
+    if (state.currentForm.childName && state.currentForm.childName.trim()) {
+      const newHealthId = generateHealthId(
+        state.currentForm.childName,
+        new Date().toISOString()
+      );
+      updateFormField('healthId', newHealthId);
+    }
+  }, [state.currentForm.childName, updateFormField]);
 
   const validateStep = (step) => {
     const newErrors = {};
@@ -149,6 +166,9 @@ const ChildForm = () => {
         }
         if (!state.currentForm.gender) {
           newErrors.gender = 'Gender is required';
+        }
+        if (!state.currentForm.healthId) {
+          newErrors.healthId = 'Health ID is required';
         }
         break;
 
@@ -169,8 +189,8 @@ const ChildForm = () => {
         }
         if (!state.currentForm.phone.trim()) {
           newErrors.phone = 'Phone number is required';
-        } else if (!/^\+?[\d\s\-\(\)]{10,}$/.test(state.currentForm.phone.trim())) {
-          newErrors.phone = 'Please enter a valid phone number';
+        } else if (!/^\d{10}$/.test(state.currentForm.phone.trim())) {
+          newErrors.phone = 'Please enter a valid 10-digit phone number';
         }
         if (!state.currentForm.parentalConsent) {
           newErrors.parentalConsent = 'Parental consent is required';
@@ -196,9 +216,33 @@ const ChildForm = () => {
     setActiveStep(prev => Math.max(prev - 1, 0));
   };
 
+  const handlePhoneChange = (value) => {
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    if (numericValue.length <= 10) {
+      updateFormField('phone', numericValue);
+    }
+  };
+
+  const handleMalnutritionChange = (selectedValues) => {
+    const naOption = 'N/A - No visible signs';
+    
+    if (selectedValues.includes(naOption)) {
+      // If N/A is selected, only keep N/A
+      updateFormField('malnutritionSigns', [naOption]);
+    } else {
+      // If any other option is selected, remove N/A if it exists
+      const filteredValues = selectedValues.filter(value => value !== naOption);
+      updateFormField('malnutritionSigns', filteredValues);
+    }
+  };
+
   const generateUniqueHealthId = () => {
+    const childName = state.currentForm.childName || 'NEW';
     const healthId = generateHealthId(
-      state.currentForm.childName,
+      childName,
       new Date().toISOString()
     );
     updateFormField('healthId', healthId);
@@ -393,14 +437,23 @@ const ChildForm = () => {
                   fullWidth
                   label="Health ID"
                   value={state.currentForm.healthId}
-                  onChange={(e) => updateFormField('healthId', e.target.value)}
-                  placeholder="Auto-generated or manual entry"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  error={!!errors.healthId}
+                  helperText={errors.healthId || "Auto-generated unique Health ID"}
+                  required
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    },
+                  }}
                 />
                 <Button
                   variant="outlined"
                   onClick={generateUniqueHealthId}
                   sx={{ minWidth: 'auto', px: 2 }}
-                  title="Generate Health ID"
+                  title="Regenerate Health ID"
                 >
                   <RefreshIcon />
                 </Button>
@@ -475,7 +528,7 @@ const ChildForm = () => {
                 <Select
                   multiple
                   value={state.currentForm.malnutritionSigns}
-                  onChange={(e) => updateFormField('malnutritionSigns', e.target.value)}
+                  onChange={(e) => handleMalnutritionChange(e.target.value)}
                   input={<OutlinedInput label="Visible Signs of Malnutrition" />}
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -485,12 +538,35 @@ const ChildForm = () => {
                     </Box>
                   )}
                 >
-                  {malnutritionOptions.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
+                  {malnutritionOptions.map((option) => {
+                    const isNASelected = state.currentForm.malnutritionSigns.includes('N/A - No visible signs');
+                    const isNAOption = option === 'N/A - No visible signs';
+                    const hasOtherSelections = state.currentForm.malnutritionSigns.length > 0 && 
+                                              !state.currentForm.malnutritionSigns.includes('N/A - No visible signs');
+                    
+                    const isDisabled = (isNASelected && !isNAOption) || (hasOtherSelections && isNAOption);
+                    
+                    return (
+                      <MenuItem 
+                        key={option} 
+                        value={option}
+                        disabled={isDisabled}
+                        sx={{
+                          opacity: isDisabled ? 0.5 : 1,
+                          fontStyle: isDisabled ? 'italic' : 'normal'
+                        }}
+                      >
+                        {option}
+                      </MenuItem>
+                    );
+                  })}
                 </Select>
+                <FormHelperText>
+                  {state.currentForm.malnutritionSigns.includes('N/A - No visible signs') 
+                    ? "N/A selected - other options are disabled"
+                    : "Select 'N/A' if no signs are visible, or choose specific symptoms"
+                  }
+                </FormHelperText>
               </FormControl>
             </Grid>
             
@@ -529,11 +605,16 @@ const ChildForm = () => {
                 label="Phone Number"
                 type="tel"
                 value={state.currentForm.phone}
-                onChange={(e) => updateFormField('phone', e.target.value)}
+                onChange={(e) => handlePhoneChange(e.target.value)}
                 error={!!errors.phone}
-                helperText={errors.phone}
+                helperText={errors.phone || `${state.currentForm.phone.length}/10 digits entered`}
                 required
-                placeholder="Enter parent/guardian's phone number"
+                placeholder="Enter 10-digit phone number"
+                inputProps={{
+                  maxLength: 10,
+                  pattern: "[0-9]{10}",
+                  inputMode: 'numeric'
+                }}
               />
             </Grid>
             
