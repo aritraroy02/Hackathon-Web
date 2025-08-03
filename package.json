@@ -22,8 +22,8 @@
     "workbox-window": "^6.5.4"
   },
   "scripts": {
-    "start": "set NODE_OPTIONS=--no-deprecation&& set HOST=0.0.0.0&& set PORT=3000&& react-scripts start",
-    "start-all": "set HOST=0.0.0.0&& set DANGEROUSLY_DISABLE_HOST_CHECK=true&& react-scripts start",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation HOST=0.0.0.0 PORT=3000 react-scripts start",
+    "start-all": "cross-env HOST=0.0.0.0 DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -49,7 +49,8 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^14.4.3"
+    "@testing-library/user-event": "^14.4.3",
+    "cross-env": "^10.0.0"
   },
   "homepage": "."
 }

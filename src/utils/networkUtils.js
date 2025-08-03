@@ -26,7 +26,7 @@ export const checkInternetConnectivity = async () => {
       signal: controller.signal
     });
     
-          clearTimeout(timeoutHandler);
+    clearTimeout(timeoutId);
     return true;
   } catch (error) {
     console.log('Internet connectivity check failed:', error.message);
@@ -46,16 +46,18 @@ export const waitForConnection = (timeout = 30000) => {
       return;
     }
 
-    const checkConnection = () => {
-      if (isOnline()) {
-        resolve(true);
-      }
-    };
-
     const timeoutHandler = setTimeout(() => {
       window.removeEventListener('online', checkConnection);
       resolve(false);
     }, timeout);
+
+    const checkConnection = () => {
+      if (isOnline()) {
+        clearTimeout(timeoutHandler);
+        window.removeEventListener('online', checkConnection);
+        resolve(true);
+      }
+    };
 
     window.addEventListener('online', checkConnection);
   });

@@ -36,14 +36,6 @@ const ProfileModal = ({ open, onClose }) => {
   const { state, setLocation, setLocationLoading, setLocationError, showNotification } = useAppContext();
   const [locationFetchRequested, setLocationFetchRequested] = useState(false);
 
-  useEffect(() => {
-    // Auto-fetch location when modal opens and user is authenticated
-    if (open && user && !state.currentLocation && !locationFetchRequested) {
-      handleFetchLocation();
-      setLocationFetchRequested(true);
-    }
-  }, [open, user, handleFetchLocation, locationFetchRequested, state.currentLocation]);
-
   const handleFetchLocation = useCallback(async () => {
     if (!state.isOnline) {
       showNotification('Internet connection required for location services', 'warning');
@@ -98,7 +90,15 @@ const ProfileModal = ({ open, onClose }) => {
     } finally {
       setLocationLoading(false);
     }
-  }, [state.isOnline, showNotification, setLocation]);
+  }, [state.isOnline, showNotification, setLocation, setLocationError, setLocationLoading]);
+
+  useEffect(() => {
+    // Auto-fetch location when modal opens and user is authenticated
+    if (open && user && !state.currentLocation && !locationFetchRequested) {
+      handleFetchLocation();
+      setLocationFetchRequested(true);
+    }
+  }, [open, user, handleFetchLocation, locationFetchRequested, state.currentLocation]);
 
   const handleLogout = () => {
     logout();

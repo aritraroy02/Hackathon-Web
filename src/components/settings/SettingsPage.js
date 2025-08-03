@@ -45,12 +45,6 @@ const SettingsPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isClearCacheDialogOpen, setIsClearCacheDialogOpen] = useState(false);
 
-  useEffect(() => {
-    loadStorageInfo();
-    loadDatabaseStats();
-    loadSavedSettings();
-  }, [loadSavedSettings]);
-
   const loadSavedSettings = useCallback(async () => {
     try {
       const savedSettings = await getSettings();
@@ -62,6 +56,12 @@ const SettingsPage = () => {
       console.error('Failed to load settings:', error);
     }
   }, [updateSettings]);
+
+  useEffect(() => {
+    loadStorageInfo();
+    loadDatabaseStats();
+    loadSavedSettings();
+  }, [loadSavedSettings]);
 
   const loadStorageInfo = async () => {
     try {
