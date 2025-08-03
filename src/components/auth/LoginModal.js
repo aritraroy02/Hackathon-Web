@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -34,7 +34,15 @@ const LoginModal = ({ open, onClose }) => {
   const [showOtp, setShowOtp] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Handle UIN input with useCallback to prevent re-renders
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleUinChange = useCallback((e) => {
+    const value = e.target.value;
+    // Only allow digits and max 10 characters
+    const numericValue = value.replace(/\D/g, '').slice(0, 10);
+    setUinNumber(numericValue);
+  }, []);
+
   useEffect(() => {
     if (open) {
       // Reset form when modal opens
@@ -44,21 +52,7 @@ const LoginModal = ({ open, onClose }) => {
       setErrors({});
       clearError();
     }
-  }, [open]); // Only depend on open prop
-
-  // Reset errors when UIN changes
-  useEffect(() => {
-    if (errors.uinNumber && uinNumber) {
-      setErrors(prev => ({ ...prev, uinNumber: '' }));
-    }
-  }, [uinNumber, errors.uinNumber]);
-
-  // Reset errors when OTP changes
-  useEffect(() => {
-    if (errors.otp && otp) {
-      setErrors(prev => ({ ...prev, otp: '' }));
-    }
-  }, [otp, errors.otp]);
+  }, [open]); // Only depend on open prop to avoid constant resets
 
   const validateUin = () => {
     const newErrors = {};
@@ -157,17 +151,11 @@ const LoginModal = ({ open, onClose }) => {
                 Enter your 10-digit UIN (Unique Identification Number) to continue
               </Typography>
               <TextField
+                key={`uin-${open}`}
                 fullWidth
                 label="UIN Number"
                 value={uinNumber}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Allow only digits and limit to 10 characters
-                  const numericValue = value.replace(/\D/g, ''); // Remove non-digits
-                  if (numericValue.length <= 10) {
-                    setUinNumber(numericValue);
-                  }
-                }}
+                onChange={handleUinChange}
                 error={!!errors.uinNumber}
                 helperText={errors.uinNumber || 'Demo UIN: 1234567890'}
                 placeholder="Enter 10-digit UIN"
@@ -198,17 +186,14 @@ const LoginModal = ({ open, onClose }) => {
                 onChange={(e) => {
                   const value = e.target.value;
                   // Allow only digits and limit to 6 characters
-                  const numericValue = value.replace(/\D/g, ''); // Remove non-digits
-                  if (numericValue.length <= 6) {
-                    setOtp(numericValue);
+                  if (/^\d*$/.test(value) && value.length <= 6) {
+                    setOtp(value);
                   }
                 }}
                 error={!!errors.otp}
                 helperText={errors.otp || 'Demo OTP: 123456'}
                 placeholder="Enter 6-digit OTP"
                 autoComplete="off"
-                inputMode="numeric"
-                pattern="[0-9]*"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
