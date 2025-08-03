@@ -34,6 +34,7 @@ const LoginModal = ({ open, onClose }) => {
   const [showOtp, setShowOtp] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (open) {
       // Reset form when modal opens
