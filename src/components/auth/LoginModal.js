@@ -43,7 +43,21 @@ const LoginModal = ({ open, onClose }) => {
       setErrors({});
       clearError();
     }
-  }, [open, clearError]); // Added clearError to dependency array
+  }, [open]); // Only depend on open prop
+
+  // Reset errors when UIN changes
+  useEffect(() => {
+    if (errors.uinNumber && uinNumber) {
+      setErrors(prev => ({ ...prev, uinNumber: '' }));
+    }
+  }, [uinNumber, errors.uinNumber]);
+
+  // Reset errors when OTP changes
+  useEffect(() => {
+    if (errors.otp && otp) {
+      setErrors(prev => ({ ...prev, otp: '' }));
+    }
+  }, [otp, errors.otp]);
 
   const validateUin = () => {
     const newErrors = {};
@@ -148,14 +162,17 @@ const LoginModal = ({ open, onClose }) => {
                 onChange={(e) => {
                   const value = e.target.value;
                   // Allow only digits and limit to 10 characters
-                  if (/^\d*$/.test(value) && value.length <= 10) {
-                    setUinNumber(value);
+                  const numericValue = value.replace(/\D/g, ''); // Remove non-digits
+                  if (numericValue.length <= 10) {
+                    setUinNumber(numericValue);
                   }
                 }}
                 error={!!errors.uinNumber}
                 helperText={errors.uinNumber || 'Demo UIN: 1234567890'}
                 placeholder="Enter 10-digit UIN"
                 autoComplete="off"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -180,14 +197,17 @@ const LoginModal = ({ open, onClose }) => {
                 onChange={(e) => {
                   const value = e.target.value;
                   // Allow only digits and limit to 6 characters
-                  if (/^\d*$/.test(value) && value.length <= 6) {
-                    setOtp(value);
+                  const numericValue = value.replace(/\D/g, ''); // Remove non-digits
+                  if (numericValue.length <= 6) {
+                    setOtp(numericValue);
                   }
                 }}
                 error={!!errors.otp}
                 helperText={errors.otp || 'Demo OTP: 123456'}
                 placeholder="Enter 6-digit OTP"
                 autoComplete="off"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
