@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Box, Container, Alert, Snackbar } from '@mui/material';
 import Header from './components/layout/Header';
 import Navigation from './components/layout/Navigation';
+import HomeScreen from './components/HomeScreen';
 import ChildForm from './components/forms/ChildForm';
 import RecordsList from './components/records/RecordsList';
 import SettingsPage from './components/settings/SettingsPage';
@@ -75,12 +76,13 @@ function App() {
           sx={{ py: 2 }}
         >
           <Routes>
-            <Route path="/" element={<ChildForm />} />
+            <Route path="/" element={<HomeScreen />} />
+            <Route path="/home" element={<HomeScreen />} />
             <Route path="/form" element={<ChildForm />} />
             <Route path="/records" element={<RecordsList />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/help" element={<HelpPage />} />
-            <Route path="*" element={<ChildForm />} />
+            <Route path="*" element={<HomeScreen />} />
           </Routes>
         </Container>
 

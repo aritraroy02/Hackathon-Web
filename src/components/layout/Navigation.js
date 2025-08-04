@@ -7,6 +7,7 @@ import {
   Badge
 } from '@mui/material';
 import {
+  Home as HomeIcon,
   Add as AddIcon,
   List as ListIcon,
   Settings as SettingsIcon,
@@ -21,15 +22,16 @@ const Navigation = () => {
 
   const getCurrentValue = () => {
     const path = location.pathname;
-    if (path === '/form') return 0;
-    if (path === '/records') return 1;
-    if (path === '/settings') return 2;
-    if (path === '/help') return 3;
+    if (path === '/' || path === '/home') return 0;
+    if (path === '/form') return 1;
+    if (path === '/records') return 2;
+    if (path === '/settings') return 3;
+    if (path === '/help') return 4;
     return 0;
   };
 
   const handleChange = (event, newValue) => {
-    const routes = ['/form', '/records', '/settings', '/help'];
+    const routes = ['/home', '/form', '/records', '/settings', '/help'];
     navigate(routes[newValue]);
   };
 
@@ -55,6 +57,12 @@ const Navigation = () => {
           },
         }}
       >
+        <BottomNavigationAction
+          label="Home"
+          icon={<HomeIcon />}
+          title="Home Screen"
+        />
+        
         <BottomNavigationAction
           label="Form"
           icon={<AddIcon />}
