@@ -24,12 +24,13 @@ import {
   FormHelperText,
   Divider
 } from '@mui/material';
+
+
 import {
   Save as SaveIcon,
   Person as PersonIcon,
   Height as HeightIcon,
   MonitorWeight as WeightIcon,
-  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -37,6 +38,8 @@ import { saveRecord, generateHealthId } from '../../utils/database';
 import { getLocationWithFallback } from '../../utils/locationService';
 import PhotoCapture from './PhotoCapture';
 import FormValidation from './FormValidation';
+
+
 
 const malnutritionOptions = [
   'Stunting (low height for age)',
@@ -78,11 +81,11 @@ const ChildForm = () => {
 
   const hasFormData = useCallback(() => {
     return state.currentForm.childName || 
-           state.currentForm.age || 
+           state.currentForm.dateOfBirth || 
            state.currentForm.weight || 
            state.currentForm.height ||
            state.currentForm.guardianName;
-  }, [state.currentForm.childName, state.currentForm.age, state.currentForm.weight, state.currentForm.height, state.currentForm.guardianName]);
+  }, [state.currentForm.childName, state.currentForm.dateOfBirth, state.currentForm.weight, state.currentForm.height, state.currentForm.guardianName]);
 
   // Auto-save functionality
   const autoSave = useCallback(async () => {
@@ -161,8 +164,23 @@ const ChildForm = () => {
         if (!state.currentForm.childName.trim()) {
           newErrors.childName = 'Child name is required';
         }
-        if (!state.currentForm.age || isNaN(parseFloat(state.currentForm.age)) || parseFloat(state.currentForm.age) < 0 || parseFloat(state.currentForm.age) > 18) {
-          newErrors.age = 'Age must be a valid number between 0 and 18 years';
+        if (!state.currentForm.dateOfBirth) {
+          newErrors.dateOfBirth = 'Date of birth is required';
+        } else {
+          const birthDate = new Date(state.currentForm.dateOfBirth);
+          const today = new Date();
+          const minDate = new Date(Date.now() - 18 * 365 * 24 * 60 * 60 * 1000);
+          
+          if (birthDate > today) {
+            newErrors.dateOfBirth = 'Date of birth cannot be in the future';
+          } else if (birthDate < minDate) {
+            newErrors.dateOfBirth = 'Child must be 18 years or younger';
+          } else {
+            const age = calculateAge(state.currentForm.dateOfBirth);
+            if (age < 0 || age > 18) {
+              newErrors.dateOfBirth = 'Child must be between 0 and 18 years old';
+            }
+          }
         }
         if (!state.currentForm.gender) {
           newErrors.gender = 'Gender is required';
@@ -239,6 +257,21 @@ const ChildForm = () => {
     }
   };
 
+
+
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return null;
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      return age - 1;
+    }
+    return age;
+  };
+
   const generateUniqueHealthId = () => {
     const childName = state.currentForm.childName || 'NEW';
     const healthId = generateHealthId(
@@ -292,14 +325,15 @@ const ChildForm = () => {
         }
       }
 
-      // Prepare record data with user information matching the required schema
-      const recordData = {
-        // Child Information
-        childName: String(state.currentForm.childName).trim(),
-        age: String(state.currentForm.age),
-        gender: String(state.currentForm.gender),
-        weight: String(state.currentForm.weight),
-        height: String(state.currentForm.height),
+             // Prepare record data with user information matching the required schema
+       const recordData = {
+         // Child Information
+         childName: String(state.currentForm.childName).trim(),
+         age: String(calculateAge(state.currentForm.dateOfBirth)),
+         dateOfBirth: String(state.currentForm.dateOfBirth),
+         gender: String(state.currentForm.gender),
+         weight: String(state.currentForm.weight),
+         height: String(state.currentForm.height),
         
         // Guardian Information
         guardianName: String(state.currentForm.guardianName).trim(),
@@ -401,19 +435,28 @@ const ChildForm = () => {
               />
             </Grid>
             
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Age (years)"
-                type="number"
-                value={state.currentForm.age}
-                onChange={(e) => updateFormField('age', e.target.value)}
-                error={!!errors.age}
-                helperText={errors.age}
-                required
-                inputProps={{ min: 0, max: 18, step: 0.1 }}
-              />
-            </Grid>
+                         <Grid item xs={12} sm={6}>
+               <TextField
+                 fullWidth
+                 label="Date of Birth"
+                 type="date"
+                 value={state.currentForm.dateOfBirth || ''}
+                 onChange={(e) => updateFormField('dateOfBirth', e.target.value)}
+                 error={!!errors.dateOfBirth}
+                 helperText={errors.dateOfBirth || (state.currentForm.dateOfBirth ? `Age: ${calculateAge(state.currentForm.dateOfBirth)} years` : 'Select child\'s date of birth')}
+                 required
+                 inputProps={{
+                   max: new Date().toISOString().split('T')[0], // Today's date
+                   min: new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Exactly 18 years ago (accounting for leap years)
+                 }}
+                 sx={{
+                   '& .MuiInputLabel-root': {
+                     backgroundColor: 'white',
+                     padding: '0 4px'
+                   }
+                 }}
+               />
+             </Grid>
             
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required error={!!errors.gender}>
@@ -431,6 +474,7 @@ const ChildForm = () => {
               </FormControl>
             </Grid>
             
+            {/* Health ID field commented out from basic info section
             <Grid item xs={12} sm={6}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <TextField
@@ -459,6 +503,7 @@ const ChildForm = () => {
                 </Button>
               </Box>
             </Grid>
+            */}
             
             <Grid item xs={12}>
               <PhotoCapture
@@ -507,15 +552,15 @@ const ChildForm = () => {
               />
             </Grid>
             
-            {state.currentForm.weight && state.currentForm.height && (
-              <Grid item xs={12}>
-                <FormValidation 
-                  weight={parseFloat(state.currentForm.weight)}
-                  height={parseFloat(state.currentForm.height)}
-                  age={parseFloat(state.currentForm.age)}
-                />
-              </Grid>
-            )}
+                         {state.currentForm.weight && state.currentForm.height && state.currentForm.dateOfBirth && (
+               <Grid item xs={12}>
+                 <FormValidation 
+                   weight={parseFloat(state.currentForm.weight)}
+                   height={parseFloat(state.currentForm.height)}
+                   age={calculateAge(state.currentForm.dateOfBirth)}
+                 />
+               </Grid>
+             )}
           </Grid>
         );
 
@@ -670,10 +715,18 @@ const ChildForm = () => {
                 <Typography variant="body2" color="text.secondary">Child's Name</Typography>
                 <Typography variant="body1">{state.currentForm.childName}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">Age</Typography>
-                <Typography variant="body1">{state.currentForm.age} years</Typography>
-              </Grid>
+                             <Grid item xs={12} sm={6}>
+                 <Typography variant="body2" color="text.secondary">Date of Birth</Typography>
+                 <Typography variant="body1">
+                   {state.currentForm.dateOfBirth ? new Date(state.currentForm.dateOfBirth).toLocaleDateString('en-GB') : 'Not provided'}
+                 </Typography>
+               </Grid>
+               <Grid item xs={12} sm={6}>
+                 <Typography variant="body2" color="text.secondary">Age</Typography>
+                 <Typography variant="body1">
+                   {state.currentForm.dateOfBirth ? `${calculateAge(state.currentForm.dateOfBirth)} years` : 'Not calculated'}
+                 </Typography>
+               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography variant="body2" color="text.secondary">Weight</Typography>
                 <Typography variant="body1">{state.currentForm.weight} kg</Typography>
