@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -13,19 +13,18 @@ import {
   Add as AddIcon,
   List as ListIcon,
   Settings as SettingsIcon,
-  Help as HelpIcon,
-  CloudDone as SyncedIcon,
-  Schedule as PendingIcon,
-  CloudOff as OfflineIcon
+  Help as HelpIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppContext } from '../contexts/AppContext';
+import { getAllRecords } from '../utils/database';
 
 const HomeScreen = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const { state } = useAppContext();
+  const [records, setRecords] = useState([]);
 
   const getWelcomeMessage = () => {
     if (isAuthenticated && user) {
@@ -34,9 +33,32 @@ const HomeScreen = () => {
     return 'Welcome to Child Health Records!';
   };
 
+  const loadRecords = useCallback(async () => {
+    try {
+      const allRecords = await getAllRecords();
+      setRecords(allRecords);
+    } catch (error) {
+      console.error('Failed to load records:', error);
+    }
+  }, []);
+
+  // Load records on component mount
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords]);
+
+  // Update records when context state changes (when new records are added)
+  useEffect(() => {
+    if (state.savedRecords.length > 0) {
+      setRecords(state.savedRecords);
+    }
+  }, [state.savedRecords]);
+
   const getQuickStats = () => {
-    const totalRecords = state.savedRecords.length;
-    const syncedRecords = state.savedRecords.filter(record => record.synced).length;
+    // Use context state if available, otherwise use local records state
+    const recordsToUse = state.savedRecords.length > 0 ? state.savedRecords : records;
+    const totalRecords = recordsToUse.length;
+    const syncedRecords = recordsToUse.filter(record => record.synced).length;
     const pendingRecords = totalRecords - syncedRecords;
 
     return {
@@ -183,13 +205,13 @@ const HomeScreen = () => {
           />
         </Grid>
         <Grid item xs={6}>
-          <QuickActionCard
-            title="View Records"
-            description={`Browse ${stats.total} health records`}
-            icon={<ListIcon sx={{ fontSize: 40 }} />}
-            onClick={() => navigate('/records')}
-            color="secondary"
-          />
+                     <QuickActionCard
+             title="View Records"
+             description={`Browse ${getQuickStats().total} health records`}
+             icon={<ListIcon sx={{ fontSize: 40 }} />}
+             onClick={() => navigate('/records')}
+             color="secondary"
+           />
         </Grid>
         <Grid item xs={6}>
           <QuickActionCard
@@ -211,50 +233,10 @@ const HomeScreen = () => {
         </Grid>
       </Grid>
 
-      {/* Sync Status */}
-      {stats.total > 0 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Sync Status
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              {state.isOnline ? (
-                <Chip
-                  icon={<SyncedIcon />}
-                  label="Online"
-                  color="success"
-                  variant="outlined"
-                />
-              ) : (
-                <Chip
-                  icon={<OfflineIcon />}
-                  label="Offline"
-                  color="error"
-                  variant="outlined"
-                />
-              )}
-              {stats.pending > 0 && (
-                <Chip
-                  icon={<PendingIcon />}
-                  label={`${stats.pending} pending`}
-                  color="warning"
-                  variant="outlined"
-                />
-              )}
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              {state.isOnline 
-                ? 'Your records will sync automatically when online.'
-                : 'Records will sync when connection is restored.'
-              }
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
+      
 
-      {/* Getting Started Guide */}
-      {stats.total === 0 && (
+             {/* Getting Started Guide */}
+       {getQuickStats().total === 0 && (
         <Card sx={{ mt: 3 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
