@@ -1,27 +1,87 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, BarChart3, Users, UserCheck, Settings, HelpCircle } from 'lucide-react';
 import { apiService } from './services/api';
 import storageService from './services/storage';
 import Dashboard from './components/Dashboard';
 import About from './components/About';
+import ChildrenList from './components/ChildrenList';
+import KYCManagement from './components/KYCManagement';
+import SettingsPage from './components/SettingsPage';
 import './App.css';
 
 // Navigation component
 function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleMenuClick = (path) => {
+    navigate(path);
+    setIsSidebarOpen(false);
+  };
+
+  const menuItems = [
+    { icon: BarChart3, label: 'Dashboard', path: '/' },
+    { icon: Users, label: 'View All Child Data', path: '/children' },
+    { icon: UserCheck, label: 'Representative KYC', path: '/kyc' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: HelpCircle, label: 'Help & Support', path: '/about' }
+  ];
   
   return (
-    <nav className="navbar">
-      <div className="container">
-        <Link to="/" className="navbar-brand">
-          Child Health Dashboard
-        </Link>
-        <ul className="navbar-nav">
-          <li><Link to="/" className={location.pathname === '/' ? 'active' : ''}>Dashboard</Link></li>
-          <li><Link to="/about" className={location.pathname === '/about' ? 'active' : ''}>About</Link></li>
-        </ul>
+    <>
+      <nav className="navbar">
+        <div className="container">
+          <div className="navbar-left">
+            <button className="hamburger-btn" onClick={toggleSidebar}>
+              <Menu size={24} />
+            </button>
+            <Link to="/" className="navbar-brand">
+              Child Health Dashboard
+            </Link>
+          </div>
+          <ul className="navbar-nav">
+            <li><Link to="/" className={location.pathname === '/' ? 'active' : ''}>Dashboard</Link></li>
+            <li><Link to="/about" className={location.pathname === '/about' ? 'active' : ''}>About</Link></li>
+          </ul>
+        </div>
+      </nav>
+
+      {/* Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div className="sidebar-overlay" onClick={toggleSidebar}></div>
+      )}
+
+      {/* Sidebar */}
+      <div className={`sidebar ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+        <div className="sidebar-header">
+          <h2>Menu</h2>
+          <button className="close-btn" onClick={toggleSidebar}>
+            <X size={24} />
+          </button>
+        </div>
+        <nav className="sidebar-nav">
+          {menuItems.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <button
+                key={item.path}
+                onClick={() => handleMenuClick(item.path)}
+                className={`sidebar-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              >
+                <IconComponent size={20} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
-    </nav>
+    </>
   );
 }
 
@@ -131,6 +191,9 @@ function App() {
                 />
               } 
             />
+            <Route path="/children" element={<ChildrenList />} />
+            <Route path="/kyc" element={<KYCManagement />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/about" element={<About />} />
           </Routes>
         </main>

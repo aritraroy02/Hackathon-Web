@@ -9,14 +9,14 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.15.0",
     "axios": "^1.5.0",
-    "recharts": "^2.8.0",
-    "lucide-react": "^0.279.0",
     "date-fns": "^2.30.0",
     "idb": "^7.1.1",
+    "lucide-react": "^0.279.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.30.1",
+    "recharts": "^2.8.0",
     "workbox-window": "^7.0.0"
   },
   "devDependencies": {

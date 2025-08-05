@@ -53,7 +53,9 @@ export const apiService = {
   // Get all children records
   getChildren: async (params = {}) => {
     try {
-      const response = await api.get('/api/children', { params });
+      // Set a high limit to get all records (you can adjust this based on your needs)
+      const requestParams = { limit: 1000, ...params };
+      const response = await api.get('/api/children', { params: requestParams });
       return {
         data: response.data.data || [],
         pagination: response.data.pagination || {},
