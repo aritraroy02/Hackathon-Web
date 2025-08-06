@@ -52,7 +52,7 @@ import { checkInternetConnectivity } from '../../utils/networkUtils';
 
 const RecordsList = () => {
   const navigate = useNavigate();
-  const { state, dispatch, showNotification, setUploading, setUploadProgress, markRecordUploaded } = useAppContext();
+  const { state, dispatch, showNotification, setUploading, setUploadProgress, markRecordUploaded, loadMongoRecords } = useAppContext();
   const { isAuthenticated, user } = useAuth();
   
   const [records, setRecords] = useState([]);
@@ -81,7 +81,13 @@ const RecordsList = () => {
   }, [showNotification]);
 
   const filterRecords = useCallback(() => {
-    let filtered = records;
+    // Combine offline records and MongoDB records
+    const allRecords = [
+      ...records.map(r => ({ ...r, source: 'offline' })),
+      ...state.mongoRecords.map(r => ({ ...r, source: 'mongodb', synced: true }))
+    ];
+    
+    let filtered = allRecords;
 
     // Text search
     if (searchTerm) {
@@ -149,7 +155,7 @@ const RecordsList = () => {
     }
 
     setFilteredRecords(filtered);
-  }, [records, searchTerm, filters, state.isOnline]);
+  }, [records, state.mongoRecords, searchTerm, filters, state.isOnline]);
 
   // Load records on component mount
   useEffect(() => {
@@ -266,6 +272,11 @@ const RecordsList = () => {
         }
         return record;
       }));
+
+      // Refresh MongoDB records after successful upload
+      if (results.successful.length > 0) {
+        await loadMongoRecords(user, true);
+      }
 
       // Show results
       const successCount = results.successful.length;
@@ -400,9 +411,27 @@ const RecordsList = () => {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              Health Records ({filteredRecords.length})
-            </Typography>
+            <Box>
+              <Typography variant="h6">
+                Records ({filteredRecords.length})
+              </Typography>
+              {isAuthenticated && (
+                <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                  <Chip 
+                    label={`Offline: ${records.length}`} 
+                    size="small" 
+                    color="default"
+                    icon={<OfflineIcon />}
+                  />
+                  <Chip 
+                    label={`MongoDB: ${state.mongoRecords.length}`} 
+                    size="small" 
+                    color="primary"
+                    icon={<SyncedIcon />}
+                  />
+                </Box>
+              )}
+            </Box>
             
             <Box sx={{ display: 'flex', gap: 1 }}>
               {/* Upload All Button */}

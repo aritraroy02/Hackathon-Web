@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { addNetworkListeners } from '../utils/networkUtils';
+import { autoSyncOfflineRecords } from '../utils/uploadService';
 
 // Initial state
 const initialState = {
@@ -24,6 +26,8 @@ const initialState = {
   savedRecords: [],
   pendingRecords: [],
   syncedRecords: [],
+  mongoRecords: [],
+  mongoRecordsLoaded: false,
   
   // App state
   isOnline: navigator.onLine,
@@ -77,6 +81,8 @@ export const actionTypes = {
   MARK_RECORD_SYNCED: 'MARK_RECORD_SYNCED',
   MARK_RECORD_UPLOADED: 'MARK_RECORD_UPLOADED',
   SET_UPLOAD_PROGRESS: 'SET_UPLOAD_PROGRESS',
+  SET_MONGO_RECORDS: 'SET_MONGO_RECORDS',
+  CLEAR_MONGO_RECORDS: 'CLEAR_MONGO_RECORDS',
   
   // App state
   SET_ONLINE_STATUS: 'SET_ONLINE_STATUS',
@@ -206,6 +212,20 @@ const appReducer = (state, action) => {
       return {
         ...state,
         uploadProgress: action.payload
+      };
+
+    case actionTypes.SET_MONGO_RECORDS:
+      return {
+        ...state,
+        mongoRecords: action.payload,
+        mongoRecordsLoaded: true
+      };
+
+    case actionTypes.CLEAR_MONGO_RECORDS:
+      return {
+        ...state,
+        mongoRecords: [],
+        mongoRecordsLoaded: false
       };
       
     case actionTypes.MARK_RECORD_UPLOADED:
@@ -366,6 +386,107 @@ export const AppProvider = ({ children }) => {
     dispatch({ type: actionTypes.UPDATE_SETTINGS, payload: newSettings });
   }, []);
 
+  const setOnlineStatus = useCallback((isOnline) => {
+    dispatch({ type: actionTypes.SET_ONLINE_STATUS, payload: isOnline });
+  }, []);
+
+  const setMongoRecords = useCallback((records) => {
+    dispatch({ type: actionTypes.SET_MONGO_RECORDS, payload: records });
+  }, []);
+
+  const clearMongoRecords = useCallback(() => {
+    dispatch({ type: actionTypes.CLEAR_MONGO_RECORDS });
+  }, []);
+
+  // Load MongoDB records once after login
+  const loadMongoRecords = useCallback(async (user, force = false) => {
+    if (!user || !navigator.onLine) {
+      return;
+    }
+
+    // Check if already loaded and not forcing refresh
+    if (state.mongoRecordsLoaded && !force) {
+      return;
+    }
+
+    try {
+      const { fetchUserRecords } = await import('../utils/uploadService');
+      const result = await fetchUserRecords(user);
+      if (result.success) {
+        setMongoRecords(result.data.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)));
+        console.log(`✅ Loaded ${result.data.length} records from MongoDB`);
+      } else {
+        console.error('Failed to fetch user records:', result.error);
+        showNotification(`Failed to load your records: ${result.error}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error loading user records:', error);
+      showNotification('Failed to load your records from server', 'error');
+    }
+  }, [setMongoRecords, showNotification]);
+
+  // Auto-sync function
+  const triggerAutoSync = useCallback(async (user) => {
+    if (!user || !state.isOnline || state.isSyncing) {
+      return;
+    }
+
+    setSyncing(true);
+    showNotification('Syncing offline data...', 'info');
+
+    try {
+      const result = await autoSyncOfflineRecords(user, (progress) => {
+        setUploadProgress({
+          current: progress.completed || 0,
+          total: progress.total || 0,
+          percentage: progress.percentage || 0,
+          currentRecord: progress.current || null
+        });
+      });
+
+      if (result.success) {
+        if (result.syncedCount > 0) {
+          showNotification(
+            `Successfully synced ${result.syncedCount} records to server`, 
+            'success'
+          );
+          // Refresh MongoDB records after successful sync
+          await loadMongoRecords(user, true);
+        }
+        if (result.failedCount > 0) {
+          showNotification(
+            `Failed to sync ${result.failedCount} records. Please try again.`, 
+            'warning'
+          );
+        }
+      } else {
+        showNotification(`Sync failed: ${result.error}`, 'error');
+      }
+    } catch (error) {
+      console.error('Auto-sync error:', error);
+      showNotification('Auto-sync failed. Please try manual sync.', 'error');
+    } finally {
+      setSyncing(false);
+      setUploadProgress({ current: 0, total: 0, percentage: 0, currentRecord: null });
+    }
+  }, [state.isOnline, state.isSyncing, setSyncing, showNotification, setUploadProgress, loadMongoRecords]);
+
+  // Set up network listeners
+  useEffect(() => {
+    const cleanup = addNetworkListeners(
+      () => {
+        setOnlineStatus(true);
+        console.log('🌐 Network: Back online');
+      },
+      () => {
+        setOnlineStatus(false);
+        console.log('📱 Network: Offline');
+      }
+    );
+
+    return cleanup;
+  }, [setOnlineStatus]);
+
   const value = {
     state,
     dispatch,
@@ -386,7 +507,12 @@ export const AppProvider = ({ children }) => {
     setLocation,
     setLocationLoading,
     setLocationError,
-    updateSettings
+    updateSettings,
+    setOnlineStatus,
+    triggerAutoSync,
+    setMongoRecords,
+    clearMongoRecords,
+    loadMongoRecords
   };
 
   return (

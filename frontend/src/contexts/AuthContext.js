@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer } from 'react';
+import { clearAllUserData } from '../utils/database';
 
 const AuthContext = createContext();
 
@@ -6,6 +7,7 @@ const initialState = {
   isAuthenticated: false,
   user: null,
   isLoading: false,
+  isLoggingOut: false,
   error: null
 };
 
@@ -36,12 +38,19 @@ const authReducer = (state, action) => {
         isLoading: false,
         error: action.payload
       };
+    case 'LOGOUT_START':
+      return {
+        ...state,
+        isLoggingOut: true,
+        error: null
+      };
     case 'LOGOUT':
       return {
         ...state,
         isAuthenticated: false,
         user: null,
         isLoading: false,
+        isLoggingOut: false,
         error: null
       };
     case 'CLEAR_ERROR':
@@ -110,13 +119,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    // Clear localStorage
-    localStorage.removeItem('authUser');
-    localStorage.removeItem('authToken');
+  const logout = async () => {
+    // Prevent double logout
+    if (state.isLoggingOut) {
+      return;
+    }
+
+    dispatch({ type: 'LOGOUT_START' });
     
-    dispatch({ type: 'LOGOUT' });
-    console.log('👋 User logged out');
+    try {
+      // Clear all user data securely
+      await clearAllUserData();
+      
+      // Clear auth-specific localStorage items
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('authToken');
+      
+      dispatch({ type: 'LOGOUT' });
+      console.log('👋 User logged out securely');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still proceed with logout even if cleanup fails
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('authToken');
+      dispatch({ type: 'LOGOUT' });
+    }
   };
 
   const clearError = () => {

@@ -33,11 +33,13 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { saveSettings, getSettings, clearAllData, getDatabaseStats } from '../../utils/database';
 import { getCacheStorageUsage, clearAllCaches } from '../../utils/serviceWorker';
 
 const SettingsPage = () => {
-  const { state, updateSettings, showNotification, logout } = useAppContext();
+  const { state, updateSettings, showNotification } = useAppContext();
+  const { logout } = useAuth();
   
   const [localSettings, setLocalSettings] = useState(state.settings);
   const [storageInfo, setStorageInfo] = useState(null);
@@ -435,7 +437,16 @@ const SettingsPage = () => {
             <Button
               variant="outlined"
               color="error"
-              onClick={logout}
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to logout? This will clear all offline data from this device.')) {
+                  try {
+                    await logout();
+                  } catch (error) {
+                    console.error('Logout error:', error);
+                    showNotification('Logout completed with some errors', 'warning');
+                  }
+                }
+              }}
             >
               Logout
             </Button>

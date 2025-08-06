@@ -286,6 +286,106 @@ export const getUploadStats = async (userUIN) => {
 };
 
 /**
+ * Fetch user-specific records from MongoDB
+ * @param {Object} user - authenticated user data
+ * @param {number} page - page number for pagination
+ * @param {number} limit - records per page
+ * @returns {Promise<Object>} user records from MongoDB
+ */
+export const fetchUserRecords = async (user, page = 1, limit = 50) => {
+  try {
+    if (!user || !user.uin && !user.uinNumber) {
+      throw new Error('User UIN is required to fetch records');
+    }
+
+    const userUIN = user.uin || user.uinNumber;
+    const response = await fetch(`${BACKEND_BASE_URL}/api/children?uploaderUIN=${userUIN}&page=${page}&limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.token || 'demo-token'}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Failed to fetch records: ${response.status} - ${errorData}`);
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      data: result.data || [],
+      pagination: result.pagination || { current: 1, pages: 1, total: 0 }
+    };
+  } catch (error) {
+    console.error('Error fetching user records:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: [],
+      pagination: { current: 1, pages: 1, total: 0 }
+    };
+  }
+};
+
+/**
+ * Auto-sync offline records when user comes online
+ * @param {Object} user - authenticated user data
+ * @param {Function} onProgress - progress callback
+ * @returns {Promise<Object>} sync result
+ */
+export const autoSyncOfflineRecords = async (user, onProgress = null) => {
+  try {
+    if (!user) {
+      throw new Error('User authentication required for auto-sync');
+    }
+
+    // Import database functions dynamically to avoid circular dependency
+    const { getAllRecords, markRecordSynced, getUnsyncedRecords } = await import('./database');
+    
+    // Get unsynced records only
+    const unsyncedRecords = await getUnsyncedRecords();
+    
+    if (unsyncedRecords.length === 0) {
+      console.log('✅ No offline records to sync');
+      return { success: true, syncedCount: 0, failedCount: 0 };
+    }
+
+    console.log(`🔄 Auto-syncing ${unsyncedRecords.length} offline records...`);
+
+    // Upload records in batch
+    const result = await uploadRecordsBatch(unsyncedRecords, user, onProgress);
+    
+    // Mark successfully uploaded records as synced
+    for (const successfulRecord of result.successful) {
+      try {
+        await markRecordSynced(successfulRecord.recordId);
+      } catch (error) {
+        console.error('Failed to mark record as synced:', error);
+      }
+    }
+
+    console.log(`✅ Auto-sync completed: ${result.successful.length} synced, ${result.failed.length} failed`);
+    
+    return {
+      success: true,
+      syncedCount: result.successful.length,
+      failedCount: result.failed.length,
+      details: result
+    };
+  } catch (error) {
+    console.error('❌ Auto-sync failed:', error);
+    return {
+      success: false,
+      error: error.message,
+      syncedCount: 0,
+      failedCount: 0
+    };
+  }
+};
+
+/**
  * Validate record before upload
  * @param {Object} record - child record
  * @returns {Object} validation result

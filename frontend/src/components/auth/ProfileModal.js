@@ -100,9 +100,17 @@ const ProfileModal = ({ open, onClose }) => {
     }
   }, [open, user, handleFetchLocation, locationFetchRequested, state.currentLocation]);
 
-  const handleLogout = () => {
-    logout();
-    onClose();
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to logout? This will clear all offline data from this device.')) {
+      try {
+        await logout();
+        onClose();
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Still close the modal even if logout has issues
+        onClose();
+      }
+    }
   };
 
   if (!user) return null;
@@ -129,7 +137,7 @@ const ProfileModal = ({ open, onClose }) => {
       }}
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">User Profile</Typography>
+        User Profile
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
         </IconButton>

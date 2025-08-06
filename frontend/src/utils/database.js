@@ -502,3 +502,75 @@ export const getDatabaseStats = async () => {
     lastUpdated: new Date().toISOString()
   };
 };
+
+/**
+ * Clear all user data from IndexedDB and localStorage
+ * This is used for secure logout
+ */
+export const clearAllUserData = async () => {
+  try {
+    // Clear IndexedDB data
+    if (!db) await initializeDatabase();
+    
+    const transaction = db.transaction([STORES.RECORDS, STORES.SETTINGS, STORES.SYNC_QUEUE], 'readwrite');
+    
+    // Clear all stores
+    await Promise.all([
+      new Promise((resolve, reject) => {
+        const request = transaction.objectStore(STORES.RECORDS).clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      }),
+      new Promise((resolve, reject) => {
+        const request = transaction.objectStore(STORES.SETTINGS).clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      }),
+      new Promise((resolve, reject) => {
+        const request = transaction.objectStore(STORES.SYNC_QUEUE).clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      })
+    ]);
+
+    // Clear localStorage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.startsWith('child-health-') ||
+        key.startsWith('auth') ||
+        key === 'savedRecords' ||
+        key === 'userSettings' ||
+        key === 'offlineRecords' ||
+        key === 'pendingUploads'
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // Clear sessionStorage
+    const sessionKeysToRemove = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (
+        key.startsWith('child-health-') ||
+        key.startsWith('auth') ||
+        key === 'userSession' ||
+        key === 'tempData'
+      )) {
+        sessionKeysToRemove.push(key);
+      }
+    }
+    
+    sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+
+    console.log('✅ All user data cleared successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Failed to clear user data:', error);
+    return { success: false, error: error.message };
+  }
+};

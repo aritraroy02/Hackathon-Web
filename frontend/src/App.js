@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Box, Container, Alert, Snackbar } from '@mui/material';
 import Header from './components/layout/Header';
@@ -17,10 +17,14 @@ import { initializeDatabase } from './utils/database';
 function AppContent() {
   const { 
     state, 
-    hideNotification 
+    hideNotification,
+    triggerAutoSync,
+    loadMongoRecords,
+    clearMongoRecords
   } = useAppContext();
   
-  const { checkExistingAuth } = useAuth();
+  const { checkExistingAuth, isAuthenticated, user } = useAuth();
+  const mongoRecordsLoadedRef = useRef(false);
 
   useEffect(() => {
     // Clear any temp data that might cause redirects
@@ -53,6 +57,34 @@ function AppContent() {
       return () => clearTimeout(timer);
     }
   }, [state.notification.show, hideNotification]);
+
+  // Load MongoDB records once when user logs in
+  useEffect(() => {
+    if (isAuthenticated && user && state.isOnline && !mongoRecordsLoadedRef.current) {
+      mongoRecordsLoadedRef.current = true;
+      loadMongoRecords(user);
+    }
+  }, [isAuthenticated, user, state.isOnline, loadMongoRecords]);
+
+  // Clear MongoDB records when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      mongoRecordsLoadedRef.current = false;
+      clearMongoRecords();
+    }
+  }, [isAuthenticated, clearMongoRecords]);
+
+  // Auto-sync when user comes online
+  useEffect(() => {
+    if (state.isOnline && isAuthenticated && user && state.settings.syncOnReconnect) {
+      // Delay auto-sync slightly to ensure network is stable
+      const timer = setTimeout(() => {
+        triggerAutoSync(user);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [state.isOnline, isAuthenticated, user, state.settings.syncOnReconnect, triggerAutoSync]);
 
   const getNotificationSeverity = (type) => {
     switch (type) {
