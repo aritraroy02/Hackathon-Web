@@ -191,9 +191,54 @@ const HomeScreen = () => {
       </Card>
 
       {/* Quick Actions */}
-      <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-        Quick Actions
-      </Typography>
+      <Card 
+        sx={{ 
+          mb: 3, 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 0
+          }
+        }}
+      >
+        <CardContent sx={{ position: 'relative', zIndex: 1, py: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography 
+              variant="h5" 
+              component="h2" 
+              sx={{ 
+                fontWeight: 'bold',
+                textAlign: 'center',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                letterSpacing: '0.5px'
+              }}
+            >
+              ⚡ Quick Actions
+            </Typography>
+          </Box>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              textAlign: 'center', 
+              mt: 0.5, 
+              opacity: 0.9,
+              fontSize: '0.85rem'
+            }}
+          >
+            Choose an action to get started
+          </Typography>
+        </CardContent>
+      </Card>
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={6}>
           <QuickActionCard

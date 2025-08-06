@@ -256,9 +256,22 @@ const HelpPage = () => {
           
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Box 
+                sx={{ 
+                  p: 2, 
+                  bgcolor: 'background.default',
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    borderColor: 'primary.main'
+                  }
+                }}
+              >
                 <Typography variant="subtitle1" gutterBottom>
-                  <CameraIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  <CameraIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'primary.main' }} />
                   Photo Capture
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -268,9 +281,22 @@ const HelpPage = () => {
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Box 
+                sx={{ 
+                  p: 2, 
+                  bgcolor: 'background.default',
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    borderColor: 'secondary.main'
+                  }
+                }}
+              >
                 <Typography variant="subtitle1" gutterBottom>
-                  <StorageIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  <StorageIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'secondary.main' }} />
                   Offline Storage
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -280,9 +306,22 @@ const HelpPage = () => {
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Box 
+                sx={{ 
+                  p: 2, 
+                  bgcolor: 'background.default',
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    borderColor: 'info.main'
+                  }
+                }}
+              >
                 <Typography variant="subtitle1" gutterBottom>
-                  <SyncIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  <SyncIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'info.main' }} />
                   Smart Sync
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -292,9 +331,22 @@ const HelpPage = () => {
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Box 
+                sx={{ 
+                  p: 2, 
+                  bgcolor: 'background.default',
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    borderColor: 'success.main'
+                  }
+                }}
+              >
                 <Typography variant="subtitle1" gutterBottom>
-                  <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'success.main' }} />
                   Security
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
