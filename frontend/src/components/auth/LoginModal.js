@@ -35,13 +35,12 @@ const LoginModal = ({ open, onClose }) => {
   const [errors, setErrors] = useState({});
 
   // Handle UIN input with useCallback to prevent re-renders
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleUinChange = useCallback((e) => {
     const value = e.target.value;
     // Only allow digits and max 10 characters
     const numericValue = value.replace(/\D/g, '').slice(0, 10);
     setUinNumber(numericValue);
-  }, []);
+  }, [setUinNumber]);
 
   useEffect(() => {
     if (open) {
@@ -52,7 +51,8 @@ const LoginModal = ({ open, onClose }) => {
       setErrors({});
       clearError();
     }
-  }, [open, clearError]); // Include clearError in dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const validateUin = () => {
     const newErrors = {};
