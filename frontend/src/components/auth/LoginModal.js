@@ -52,7 +52,7 @@ const LoginModal = ({ open, onClose }) => {
       setErrors({});
       clearError();
     }
-  }, [open]); // Only depend on open prop to avoid constant resets
+  }, [open, clearError]); // Include clearError in dependencies
 
   const validateUin = () => {
     const newErrors = {};
