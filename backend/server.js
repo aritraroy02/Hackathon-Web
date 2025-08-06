@@ -65,18 +65,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://harshbontala188:8I52Oqeh3sWYTDJ7@cluster0.5lsiap2.mongodb.net/childBooklet?retryWrites=true&w=majority&appName=Cluster0';
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ Connected to MongoDB Atlas');
-})
-.catch((error) => {
-  console.error('❌ MongoDB connection error:', error);
-  process.exit(1);
-});
-
 // Child Health Record Schema
 const childHealthSchema = new mongoose.Schema({
   // Child Information
@@ -140,7 +128,124 @@ childHealthSchema.index({ 'location.city': 1, 'location.state': 1 });
 
 const ChildHealthRecord = mongoose.model('ChildHealthRecord', childHealthSchema);
 
-// Health check endpoint
+// User Schema for authentication
+const userSchema = new mongoose.Schema({
+  uinNumber: { 
+    type: String, 
+    required: true, 
+    unique: true, 
+    length: 10,
+    validate: {
+      validator: function(v) {
+        return /^\d{10}$/.test(v);
+      },
+      message: 'UIN Number must be exactly 10 digits'
+    }
+  },
+  name: { type: String, required: true, trim: true },
+  firstName: { type: String, required: true, trim: true },
+  lastName: { type: String, required: true, trim: true },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    lowercase: true,
+    validate: {
+      validator: function(v) {
+        return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
+      },
+      message: 'Please enter a valid email address'
+    }
+  },
+  phone: { 
+    type: String, 
+    required: true,
+    validate: {
+      validator: function(v) {
+        return /^[\+]?[0-9\-\s\(\)]+$/.test(v);
+      },
+      message: 'Please enter a valid phone number'
+    }
+  },
+  address: { type: String, required: true },
+  dateOfBirth: { type: Date, required: true },
+  gender: { 
+    type: String, 
+    required: true, 
+    enum: ['Male', 'Female', 'Other'] 
+  },
+  employeeId: { type: String, required: true, unique: true },
+  role: { 
+    type: String, 
+    required: true, 
+    enum: ['health_worker', 'supervisor', 'admin', 'data_entry'],
+    default: 'health_worker'
+  },
+  department: { type: String, required: true },
+  designation: { type: String, required: true },
+  isActive: { type: Boolean, default: true },
+  photo: { type: String, default: null }, // Base64 or URL
+  lastLogin: { type: Date },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true,
+  collection: 'users'
+});
+
+// Indexes for better performance
+userSchema.index({ uinNumber: 1 });
+userSchema.index({ email: 1 });
+userSchema.index({ employeeId: 1 });
+userSchema.index({ role: 1, isActive: 1 });
+
+const User = mongoose.model('User', userSchema);
+
+// Create default test user (run once)
+const createDefaultUser = async () => {
+  try {
+    const existingUser = await User.findOne({ uinNumber: '1234567890' });
+    if (!existingUser) {
+      const defaultUser = new User({
+        uinNumber: '1234567890',
+        name: 'ARITRADITYA ROY',
+        firstName: 'ARITRADITYA',
+        lastName: 'ROY',
+        email: 'aritraditya.roy@gmail.com',
+        phone: '+91-9876543210',
+        address: '123 Main Street, New Delhi, Delhi 110001',
+        dateOfBirth: new Date('1985-06-15'),
+        gender: 'Male',
+        employeeId: 'HW-567890',
+        role: 'health_worker',
+        department: 'Child Health Services',
+        designation: 'Senior Health Worker',
+        isActive: true
+      });
+      
+      await defaultUser.save();
+      console.log('✅ Default test user created with UIN: 1234567890');
+    } else {
+      console.log('ℹ️ Default test user already exists');
+    }
+  } catch (error) {
+    console.error('❌ Error creating default user:', error);
+  }
+};
+
+// Call createDefaultUser after MongoDB connection
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(async () => {
+  console.log('✅ Connected to MongoDB Atlas');
+  await createDefaultUser();
+})
+.catch((error) => {
+  console.error('❌ MongoDB connection error:', error);
+  process.exit(1);
+});
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -158,6 +263,343 @@ app.get('/api/health', (req, res) => {
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
+});
+
+// Authentication endpoints
+// Verify UIN number and get user data
+app.post('/api/auth/verify-uin', async (req, res) => {
+  try {
+    const { uinNumber } = req.body;
+    
+    // Validate UIN format
+    if (!uinNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'UIN Number is required'
+      });
+    }
+    
+    if (!/^\d{10}$/.test(uinNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: 'UIN Number must be exactly 10 digits'
+      });
+    }
+    
+    // Check if user exists in database
+    const user = await User.findOne({ 
+      uinNumber: uinNumber,
+      isActive: true 
+    });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found. Please contact administrator for access.',
+        errorCode: 'USER_NOT_FOUND'
+      });
+    }
+    
+    // Update last login timestamp without triggering validation
+    await User.findOneAndUpdate(
+      { uinNumber: uinNumber },
+      { lastLogin: new Date() },
+      { new: false }
+    );
+    
+    // Return user data (excluding sensitive fields)
+    const userData = {
+      uinNumber: user.uinNumber,
+      uin: user.uinNumber, // For compatibility
+      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      employeeId: user.employeeId,
+      role: user.role,
+      department: user.department,
+      designation: user.designation,
+      photo: user.photo,
+      isActive: user.isActive,
+      lastLogin: user.lastLogin
+    };
+    
+    console.log(`✅ User authenticated: ${user.name} (${user.uinNumber})`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'User verified successfully',
+      data: userData,
+      token: `verified-${user.uinNumber}-${Date.now()}` // Simple token for session
+    });
+    
+  } catch (error) {
+    console.error('Error verifying UIN:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during verification',
+      error: error.message
+    });
+  }
+});
+
+// Get user profile by UIN
+app.get('/api/auth/profile/:uin', async (req, res) => {
+  try {
+    const { uin } = req.params;
+    
+    const user = await User.findOne({ 
+      uinNumber: uin,
+      isActive: true 
+    });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Return user data (excluding sensitive fields)
+    const userData = {
+      uinNumber: user.uinNumber,
+      uin: user.uinNumber,
+      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      employeeId: user.employeeId,
+      role: user.role,
+      department: user.department,
+      designation: user.designation,
+      photo: user.photo,
+      isActive: user.isActive,
+      lastLogin: user.lastLogin
+    };
+    
+    res.status(200).json({
+      success: true,
+      data: userData
+    });
+    
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user profile',
+      error: error.message
+    });
+  }
+});
+
+// Create new user (admin endpoint)
+app.post('/api/auth/users', async (req, res) => {
+  try {
+    const userData = req.body;
+    
+    // Validate required fields
+    const requiredFields = [
+      'uinNumber', 'name', 'firstName', 'lastName', 'email', 
+      'phone', 'address', 'dateOfBirth', 'gender', 'employeeId', 
+      'role', 'department', 'designation'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !userData[field]);
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields',
+        missingFields: missingFields
+      });
+    }
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [
+        { uinNumber: userData.uinNumber },
+        { email: userData.email },
+        { employeeId: userData.employeeId }
+      ]
+    });
+    
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'User already exists with this UIN, email, or employee ID'
+      });
+    }
+    
+    // Create new user
+    const newUser = new User(userData);
+    const savedUser = await newUser.save();
+    
+    console.log(`✅ New user created: ${savedUser.name} (${savedUser.uinNumber})`);
+    
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: {
+        uinNumber: savedUser.uinNumber,
+        name: savedUser.name,
+        email: savedUser.email,
+        employeeId: savedUser.employeeId,
+        role: savedUser.role
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create user',
+      error: error.message
+    });
+  }
+});
+
+// Get all users (admin endpoint)
+app.get('/api/auth/users', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, role, isActive } = req.query;
+    
+    // Build query
+    const query = {};
+    if (role) query.role = role;
+    if (isActive !== undefined) query.isActive = isActive === 'true';
+    
+    // Execute query with pagination
+    const users = await User.find(query)
+      .select('-__v') // Exclude version field
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+    
+    const total = await User.countDocuments(query);
+    
+    res.status(200).json({
+      success: true,
+      data: users,
+      pagination: {
+        current: page,
+        pages: Math.ceil(total / limit),
+        total: total
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
+  }
+});
+
+// Bulk create sample users (development endpoint)
+app.post('/api/auth/users/sample', async (req, res) => {
+  try {
+    const sampleUsers = [
+      {
+        uinNumber: '1234567890',
+        name: 'ARITRADITYA ROY',
+        firstName: 'ARITRADITYA',
+        lastName: 'ROY',
+        email: 'aritraditya.roy@gmail.com',
+        phone: '+91-9876543210',
+        address: '123 Main Street, New Delhi, Delhi 110001',
+        dateOfBirth: new Date('1985-06-15'),
+        gender: 'Male',
+        employeeId: 'HW-567890',
+        role: 'health_worker',
+        department: 'Child Health Services',
+        designation: 'Senior Health Worker'
+      },
+      {
+        uinNumber: '9876543210',
+        name: 'PRIYA SHARMA',
+        firstName: 'PRIYA',
+        lastName: 'SHARMA',
+        email: 'priya.sharma@healthcare.gov.in',
+        phone: '+91-9876543211',
+        address: '456 Healthcare Avenue, Mumbai, Maharashtra 400001',
+        dateOfBirth: new Date('1990-03-22'),
+        gender: 'Female',
+        employeeId: 'HW-123456',
+        role: 'supervisor',
+        department: 'Child Health Services',
+        designation: 'Health Supervisor'
+      },
+      {
+        uinNumber: '5555555555',
+        name: 'RAJESH KUMAR',
+        firstName: 'RAJESH',
+        lastName: 'KUMAR',
+        email: 'rajesh.kumar@health.gov.in',
+        phone: '+91-9876543212',
+        address: '789 Medical Complex, Bangalore, Karnataka 560001',
+        dateOfBirth: new Date('1988-07-10'),
+        gender: 'Male',
+        employeeId: 'HW-789012',
+        role: 'health_worker',
+        department: 'Child Health Services',
+        designation: 'Health Worker'
+      }
+    ];
+
+    const results = {
+      created: [],
+      existing: [],
+      failed: []
+    };
+
+    for (const userData of sampleUsers) {
+      try {
+        const existingUser = await User.findOne({ uinNumber: userData.uinNumber });
+        if (existingUser) {
+          results.existing.push(userData.uinNumber);
+          continue;
+        }
+
+        const newUser = new User(userData);
+        const savedUser = await newUser.save();
+        results.created.push({
+          uinNumber: savedUser.uinNumber,
+          name: savedUser.name,
+          role: savedUser.role
+        });
+      } catch (error) {
+        results.failed.push({
+          uinNumber: userData.uinNumber,
+          error: error.message
+        });
+      }
+    }
+
+    console.log(`📊 Sample users creation: ${results.created.length} created, ${results.existing.length} existing, ${results.failed.length} failed`);
+
+    res.status(200).json({
+      success: true,
+      message: `Sample users processed: ${results.created.length} created, ${results.existing.length} already exist`,
+      data: results
+    });
+
+  } catch (error) {
+    console.error('Error creating sample users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create sample users',
+      error: error.message
+    });
+  }
 });
 
 // Get all children records

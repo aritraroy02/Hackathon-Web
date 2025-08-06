@@ -11,32 +11,37 @@ import HelpPage from './components/help/HelpPage';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import InstallPrompt from './components/common/InstallPrompt';
 import { useAppContext } from './contexts/AppContext';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { initializeDatabase } from './utils/database';
 
-function App() {
+function AppContent() {
   const { 
     state, 
     hideNotification 
   } = useAppContext();
+  
+  const { checkExistingAuth } = useAuth();
 
   useEffect(() => {
     // Clear any temp data that might cause redirects
     localStorage.removeItem('childFormTempData');
     
-    // Initialize databases
-    const initializeDatabases = async () => {
+    // Initialize databases and check existing auth
+    const initializeApp = async () => {
       try {
         // Initialize IndexedDB for offline storage
         await initializeDatabase();
         console.log('IndexedDB initialized');
+        
+        // Check for existing authentication
+        await checkExistingAuth();
       } catch (error) {
-        console.error('Database initialization failed:', error);
+        console.error('App initialization failed:', error);
       }
     };
 
-    initializeDatabases();
-  }, []);
+    initializeApp();
+  }, [checkExistingAuth]);
 
   // Auto-hide notification after 5 seconds
   useEffect(() => {
@@ -59,7 +64,6 @@ function App() {
   };
 
   return (
-    <AuthProvider>
       <Box className="app-container">
         <Header />
         
@@ -106,6 +110,13 @@ function App() {
           </Alert>
         </Snackbar>
       </Box>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
     </AuthProvider>
   );
 }
