@@ -134,7 +134,6 @@ const userSchema = new mongoose.Schema({
     type: String, 
     required: true, 
     unique: true, 
-    length: 10,
     validate: {
       validator: function(v) {
         return /^\d{10}$/.test(v);
@@ -145,6 +144,8 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
+  fatherName: { type: String, trim: true },
+  motherName: { type: String, trim: true },
   email: { 
     type: String, 
     required: true, 
@@ -168,6 +169,9 @@ const userSchema = new mongoose.Schema({
     }
   },
   address: { type: String, required: true },
+  city: { type: String, trim: true },
+  state: { type: String, trim: true },
+  pincode: { type: String, trim: true },
   dateOfBirth: { type: Date, required: true },
   gender: { 
     type: String, 
@@ -184,8 +188,16 @@ const userSchema = new mongoose.Schema({
   department: { type: String, required: true },
   designation: { type: String, required: true },
   isActive: { type: Boolean, default: true },
+  isVerified: { type: Boolean, default: false },
   photo: { type: String, default: null }, // Base64 or URL
   lastLogin: { type: Date },
+  loginAttempts: { type: Number, default: 0 },
+  currentOTP: {
+    code: { type: String },
+    expiresAt: { type: Date },
+    attempts: { type: Number, default: 0 }
+  },
+  createdBy: { type: String, default: 'admin' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, {
@@ -233,6 +245,22 @@ const createDefaultUser = async () => {
   }
 };
 
+// Function to clean up problematic indexes
+const cleanupIndexes = async () => {
+  try {
+    // Try to drop the problematic uni index if it exists
+    const indexes = await User.collection.listIndexes().toArray();
+    const uniIndex = indexes.find(index => index.name === 'uni_1');
+    
+    if (uniIndex) {
+      await User.collection.dropIndex('uni_1');
+      console.log('✅ Dropped problematic uni index');
+    }
+  } catch (error) {
+    console.log('ℹ️ No uni index to drop (this is expected)');
+  }
+};
+
 // Call createDefaultUser after MongoDB connection
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
@@ -240,6 +268,7 @@ mongoose.connect(MONGODB_URI, {
 })
 .then(async () => {
   console.log('✅ Connected to MongoDB Atlas');
+  await cleanupIndexes();
   await createDefaultUser();
 })
 .catch((error) => {
@@ -602,6 +631,192 @@ app.post('/api/auth/users/sample', async (req, res) => {
   }
 });
 
+// Update user (admin endpoint)
+app.put('/api/auth/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    // Remove fields that shouldn't be updated
+    delete updateData._id;
+    delete updateData.__v;
+    delete updateData.createdAt;
+    
+    // Update timestamp
+    updateData.updatedAt = new Date();
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-__v');
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log(`✅ User updated: ${updatedUser.name} (${updatedUser.uinNumber})`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      data: updatedUser
+    });
+    
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user',
+      error: error.message
+    });
+  }
+});
+
+// Delete user (admin endpoint)
+app.delete('/api/auth/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const deletedUser = await User.findByIdAndDelete(id);
+    
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log(`🗑️ User deleted: ${deletedUser.name} (${deletedUser.uinNumber})`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully',
+      data: {
+        deletedUser: {
+          id: deletedUser._id,
+          name: deletedUser.name,
+          uinNumber: deletedUser.uinNumber
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user',
+      error: error.message
+    });
+  }
+});
+
+// Get specific user by ID (admin endpoint)
+app.get('/api/auth/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findById(id).select('-__v');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+    
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user',
+      error: error.message
+    });
+  }
+});
+
+// Update user verification status (admin endpoint)
+app.patch('/api/auth/users/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isVerified } = req.body;
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { isVerified: isVerified, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).select('-__v');
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log(`✅ User verification updated: ${updatedUser.name} - ${isVerified ? 'Verified' : 'Unverified'}`);
+    
+    res.status(200).json({
+      success: true,
+      message: `User ${isVerified ? 'verified' : 'unverified'} successfully`,
+      data: updatedUser
+    });
+    
+  } catch (error) {
+    console.error('Error updating user verification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user verification',
+      error: error.message
+    });
+  }
+});
+
+// Update user active status (admin endpoint)
+app.patch('/api/auth/users/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { isActive: isActive, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).select('-__v');
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log(`✅ User status updated: ${updatedUser.name} - ${isActive ? 'Active' : 'Inactive'}`);
+    
+    res.status(200).json({
+      success: true,
+      message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
+      data: updatedUser
+    });
+    
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user status',
+      error: error.message
+    });
+  }
+});
+
 // Get all children records
 app.get('/api/children', async (req, res) => {
   try {
@@ -905,6 +1120,262 @@ app.post('/api/children/batch', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Batch upload failed',
+      error: error.message
+    });
+  }
+});
+
+// User Management Routes
+// Get all users with optional filtering
+app.get('/api/users', async (req, res) => {
+  try {
+    const { role, isVerified } = req.query;
+    let filter = {};
+    
+    if (role) filter.role = role;
+    if (isVerified !== undefined) filter.isVerified = isVerified === 'true';
+    
+    const users = await User.find(filter).sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      data: users,
+      count: users.length
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching users',
+      error: error.message
+    });
+  }
+});
+
+// Create new user
+app.post('/api/users', async (req, res) => {
+  try {
+    const { uinNumber, name, firstName, lastName, email, phone, address, dateOfBirth, gender, employeeId, role, department, designation, isVerified } = req.body;
+    
+    // Check if UIN already exists
+    const existingUser = await User.findOne({ uinNumber });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'User with this UIN already exists'
+      });
+    }
+    
+    // Check if employee ID already exists
+    const existingEmployee = await User.findOne({ employeeId });
+    if (existingEmployee) {
+      return res.status(409).json({
+        success: false,
+        message: 'User with this Employee ID already exists'
+      });
+    }
+    
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(409).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+    
+    const newUser = new User({
+      uinNumber,
+      name,
+      firstName,
+      lastName,
+      email,
+      phone,
+      address,
+      dateOfBirth,
+      gender,
+      employeeId,
+      role: role || 'health_worker',
+      department,
+      designation,
+      isActive: true,
+      isVerified: isVerified || false
+    });
+    
+    const savedUser = await newUser.save();
+    console.log('✅ New user created:', savedUser.name, '- UIN:', savedUser.uinNumber);
+    
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: savedUser
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    
+    // Handle specific duplicate key errors with meaningful messages
+    if (error.code === 11000) {
+      let field = 'field';
+      let message = 'A user with this information already exists';
+      
+      if (error.message.includes('uinNumber')) {
+        field = 'UIN Number';
+        message = 'A user with this UIN Number already exists';
+      } else if (error.message.includes('email')) {
+        field = 'email';
+        message = 'A user with this email already exists';
+      } else if (error.message.includes('employeeId')) {
+        field = 'Employee ID';
+        message = 'A user with this Employee ID already exists';
+      }
+      
+      return res.status(409).json({
+        success: false,
+        message: message,
+        field: field
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error creating user',
+      error: error.message
+    });
+  }
+});
+
+// Update user
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, { 
+      new: true, 
+      runValidators: true 
+    });
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log('✅ User updated:', updatedUser.name);
+    
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      data: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user',
+      error: error.message
+    });
+  }
+});
+
+// Delete user
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const deletedUser = await User.findByIdAndDelete(id);
+    
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log('✅ User deleted:', deletedUser.name);
+    
+    res.json({
+      success: true,
+      message: 'User deleted successfully',
+      data: deletedUser
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting user',
+      error: error.message
+    });
+  }
+});
+
+// Update user verification status
+app.patch('/api/users/:id/verification', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isVerified } = req.body;
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      id, 
+      { isVerified }, 
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log(`✅ User verification ${isVerified ? 'approved' : 'rejected'}:`, updatedUser.name);
+    
+    res.json({
+      success: true,
+      message: `User ${isVerified ? 'approved' : 'rejected'} successfully`,
+      data: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user verification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user verification',
+      error: error.message
+    });
+  }
+});
+
+// Update user status (for more general status updates)
+app.patch('/api/users/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      id, 
+      { status }, 
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log('✅ User status updated:', updatedUser.name, '- New status:', status);
+    
+    res.json({
+      success: true,
+      message: 'User status updated successfully',
+      data: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user status',
       error: error.message
     });
   }

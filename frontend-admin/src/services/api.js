@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL for the backend API - adjust this based on your backend deployment
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://child-health-backend-747316458447.us-central1.run.app';
 
 console.log('🔗 Frontend connecting to backend API at:', BASE_URL);
 
@@ -179,6 +179,87 @@ export const apiService = {
       };
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+      throw error;
+    }
+  },
+
+  // Get all users/representatives
+  getUsers: async (params = {}) => {
+    try {
+      const response = await api.get('/api/users', { params });
+      return {
+        data: response.data.data || [],
+        pagination: response.data.pagination || {},
+        success: response.data.success
+      };
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      throw error;
+    }
+  },
+
+  // Create new user/representative
+  createUser: async (userData) => {
+    try {
+      const response = await api.post('/api/users', userData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      throw error;
+    }
+  },
+
+  // Get specific user by ID
+  getUser: async (id) => {
+    try {
+      const response = await api.get(`/api/users/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to fetch user ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Update user/representative
+  updateUser: async (id, userData) => {
+    try {
+      const response = await api.put(`/api/users/${id}`, userData);
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to update user ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Delete user/representative
+  deleteUser: async (id) => {
+    try {
+      const response = await api.delete(`/api/users/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to delete user ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Update user verification status
+  updateUserVerification: async (id, isVerified) => {
+    try {
+      const response = await api.patch(`/api/users/${id}/verification`, { isVerified });
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to update user verification ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Update user active status
+  updateUserStatus: async (id, isActive) => {
+    try {
+      const response = await api.patch(`/api/users/${id}/status`, { status: isActive });
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to update user status ${id}:`, error);
       throw error;
     }
   }
