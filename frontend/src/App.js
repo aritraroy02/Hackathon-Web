@@ -14,6 +14,7 @@ import { useAppContext } from './contexts/AppContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { initializeDatabase } from './utils/database';
 import './i18n'; // Initialize i18n
+import i18n from './i18n';
 
 function AppContent() {
   const { 
@@ -26,8 +27,15 @@ function AppContent() {
   
   const { checkExistingAuth, isAuthenticated, user } = useAuth();
   const mongoRecordsLoadedRef = useRef(false);
+  const appInitializedRef = useRef(false);
+  const autoSyncTriggeredRef = useRef(false);
 
   useEffect(() => {
+    // Prevent re-initialization
+    if (appInitializedRef.current) {
+      return;
+    }
+    
     // Clear any temp data that might cause redirects
     localStorage.removeItem('childFormTempData');
     
@@ -38,6 +46,14 @@ function AppContent() {
     const initializeApp = async () => {
       try {
         console.log('Initializing app...');
+        
+        // Validate and fix language setting
+        const currentLanguage = i18n.language;
+        const supportedLanguages = ['en', 'es', 'fr', 'hi', 'zh'];
+        if (!supportedLanguages.includes(currentLanguage)) {
+          console.log(`⚠️ Unsupported language detected: ${currentLanguage}, switching to 'en'`);
+          i18n.changeLanguage('en');
+        }
         
         // Initialize IndexedDB for offline storage with recovery
         try {
@@ -66,6 +82,9 @@ function AppContent() {
         // Check for existing authentication
         await checkExistingAuth();
         console.log('Auth check completed');
+        
+        // Mark app as initialized
+        appInitializedRef.current = true;
       } catch (error) {
         console.error('App initialization failed:', error);
         // Clear potentially corrupted data if initialization fails
@@ -97,6 +116,7 @@ function AppContent() {
   useEffect(() => {
     if (isAuthenticated && user && state.isOnline && !mongoRecordsLoadedRef.current) {
       mongoRecordsLoadedRef.current = true;
+      console.log('🔄 Triggering initial MongoDB load...');
       loadMongoRecords(user);
     }
   }, [isAuthenticated, user, state.isOnline, loadMongoRecords]);
@@ -105,6 +125,7 @@ function AppContent() {
   useEffect(() => {
     if (!isAuthenticated) {
       mongoRecordsLoadedRef.current = false;
+      autoSyncTriggeredRef.current = false;
       clearMongoRecords();
     }
   }, [isAuthenticated, clearMongoRecords]);
@@ -116,11 +137,12 @@ function AppContent() {
       return;
     }
     
-    if (state.isOnline && isAuthenticated && user && state.settings.syncOnReconnect && !state.isSyncing) {
+    if (state.isOnline && isAuthenticated && user && state.settings.syncOnReconnect && !state.isSyncing && !autoSyncTriggeredRef.current) {
       // Delay auto-sync slightly to ensure network is stable
       const timer = setTimeout(() => {
         // Double-check conditions haven't changed
         if (!window.__LOGOUT_IN_PROGRESS__ && state.isOnline && isAuthenticated && user && !state.isSyncing) {
+          autoSyncTriggeredRef.current = true;
           triggerAutoSync(user);
         }
       }, 2000);

@@ -121,47 +121,72 @@ const saveRecordToIndexedDB = async (record) => {
     const transaction = db.transaction([STORES.RECORDS], 'readwrite');
     const store = transaction.objectStore(STORES.RECORDS);
     
-    // Add metadata
-    const recordWithMeta = {
-      ...record,
-      id: record.id || generateId(),
-      healthId: record.healthId || generateHealthId(),
-      timestamp: record.timestamp || new Date().toISOString(),
-      synced: false,
-      isOfflineRecord: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    // First check if a record with this healthId already exists
+    const healthId = record.healthId || generateHealthId(record.childName, record.timestamp);
+    
+    // Get all records to check for duplicates
+    const getAllRequest = store.getAll();
+    
+    getAllRequest.onsuccess = () => {
+      const existingRecords = getAllRequest.result || [];
+      const existingRecord = existingRecords.find(r => r.healthId === healthId);
+      
+      // If record exists, update it instead of creating a new one
+      const recordWithMeta = {
+        ...(existingRecord || {}),
+        ...record,
+        id: existingRecord?.id || record.id || generateId(),
+        healthId: healthId,
+        timestamp: record.timestamp || existingRecord?.timestamp || new Date().toISOString(),
+        synced: record.synced || false,
+        isOfflineRecord: true,
+        createdAt: existingRecord?.createdAt || record.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    
+      // Ensure timestamp is valid
+      if (!recordWithMeta.timestamp || isNaN(new Date(recordWithMeta.timestamp).getTime())) {
+        recordWithMeta.timestamp = new Date().toISOString();
+      }
+      
+      // Encrypt sensitive data
+      const encryptedRecord = {
+        ...recordWithMeta,
+        encryptedData: encryptData({
+          childName: recordWithMeta.childName,
+          guardianName: recordWithMeta.guardianName,
+          photo: recordWithMeta.photo,
+          malnutritionSigns: recordWithMeta.malnutritionSigns,
+          recentIllnesses: recordWithMeta.recentIllnesses
+        })
+      };
+      
+      // Remove sensitive data from main object
+      delete encryptedRecord.childName;
+      delete encryptedRecord.guardianName;
+      delete encryptedRecord.photo;
+      delete encryptedRecord.malnutritionSigns;
+      delete encryptedRecord.recentIllnesses;
+      
+      const request = store.put(encryptedRecord);
+      
+      request.onsuccess = () => {
+        console.log('Record saved to IndexedDB:', recordWithMeta.id);
+        // Clear cache when new record is saved
+        unsyncedRecordsCache = null;
+        cacheTimestamp = 0;
+        resolve(recordWithMeta);
+      };
+      
+      request.onerror = () => {
+        console.error('Failed to save record to IndexedDB:', request.error);
+        reject(new Error('Failed to save record'));
+      };
     };
     
-    // Encrypt sensitive data
-    const encryptedRecord = {
-      ...recordWithMeta,
-      encryptedData: encryptData({
-        childName: recordWithMeta.childName,
-        guardianName: recordWithMeta.guardianName,
-        photo: recordWithMeta.photo,
-        malnutritionSigns: recordWithMeta.malnutritionSigns,
-        recentIllnesses: recordWithMeta.recentIllnesses
-      })
-    };
-    
-    // Remove sensitive data from main object
-    delete encryptedRecord.childName;
-    delete encryptedRecord.guardianName;
-    delete encryptedRecord.photo;
-    delete encryptedRecord.malnutritionSigns;
-    delete encryptedRecord.recentIllnesses;
-    
-    const request = store.put(encryptedRecord);
-    
-    request.onsuccess = () => {
-      console.log('Record saved to IndexedDB:', recordWithMeta.id);
-      resolve(recordWithMeta);
-    };
-    
-    request.onerror = () => {
-      console.error('Failed to save record to IndexedDB:', request.error);
-      reject(new Error('Failed to save record'));
+    getAllRequest.onerror = () => {
+      console.error('Failed to get records for duplicate check:', getAllRequest.error);
+      reject(new Error('Failed to check for duplicates'));
     };
   });
 };
@@ -338,6 +363,11 @@ export const deleteRecord = async (id) => {
 /**
  * Get unsynced records
  */
+// Cache for unsynced records to prevent repeated queries
+let unsyncedRecordsCache = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5000; // 5 seconds
+
 export const getUnsyncedRecords = async () => {
   try {
     // Skip entirely if logout is in progress
@@ -345,6 +375,16 @@ export const getUnsyncedRecords = async () => {
       console.log('⚠️ Skipping getUnsyncedRecords - logout in progress');
       return [];
     }
+    
+    // Return cached result if still valid
+    const now = Date.now();
+    if (unsyncedRecordsCache && (now - cacheTimestamp) < CACHE_DURATION) {
+      console.log('📋 Returning cached unsynced records');
+      return unsyncedRecordsCache;
+    }
+    
+    // Run cleanup before getting unsynced records
+    await cleanupDatabase();
     
     if (!db) await initializeDatabase();
     
@@ -356,7 +396,29 @@ export const getUnsyncedRecords = async () => {
         // Use store.getAll() instead of index to avoid index corruption issues
         const request = store.getAll();
         
+
+        
+        request.onerror = () => {
+          console.error('Failed to get records from IndexedDB:', request.error);
+          resolve([]);
+        };
+        
+        transaction.onerror = () => {
+          console.error('Transaction failed for records:', transaction.error);
+          resolve([]);
+        };
+        
+        // Add timeout to prevent hanging - only if request is still pending
+        const timeoutId = setTimeout(() => {
+          if (request.readyState === 'pending') {
+            console.warn('⚠️ Database query timeout, returning empty array');
+            resolve([]);
+          }
+        }, 3000); // Reduced timeout to 3 seconds
+        
+        // Clear timeout if request completes
         request.onsuccess = () => {
+          clearTimeout(timeoutId);
           try {
             const allRecords = request.result || [];
             const unsyncedRecords = [];
@@ -391,28 +453,15 @@ export const getUnsyncedRecords = async () => {
             }
             
             console.log(`✅ Found ${unsyncedRecords.length} unsynced records`);
+            // Cache the result
+            unsyncedRecordsCache = unsyncedRecords;
+            cacheTimestamp = Date.now();
             resolve(unsyncedRecords);
           } catch (processingError) {
             console.error('Error processing records:', processingError);
             resolve([]);
           }
         };
-        
-        request.onerror = () => {
-          console.error('Failed to get records from IndexedDB:', request.error);
-          resolve([]);
-        };
-        
-        transaction.onerror = () => {
-          console.error('Transaction failed for records:', transaction.error);
-          resolve([]);
-        };
-        
-        // Add timeout to prevent hanging
-        setTimeout(() => {
-          console.warn('⚠️ Database query timeout, returning empty array');
-          resolve([]);
-        }, 5000);
         
       } catch (setupError) {
         console.error('Error setting up records query:', setupError);
@@ -428,11 +477,41 @@ export const getUnsyncedRecords = async () => {
  * Mark record as synced
  */
 export const markRecordSynced = async (id, serverResponse = null) => {
-  return updateRecord(id, {
-    synced: true,
-    syncedAt: new Date().toISOString(),
-    serverResponse
-  });
+  try {
+    // Clear cache when marking record as synced
+    unsyncedRecordsCache = null;
+    cacheTimestamp = 0;
+    
+    // Get the record first to check its healthId
+    const record = await getRecord(id);
+    if (!record) {
+      throw new Error('Record not found');
+    }
+    
+    // Check for any other records with the same healthId
+    const allRecords = await getAllRecords();
+    const duplicates = allRecords.filter(r => 
+      r.healthId === record.healthId && 
+      r.id !== record.id
+    );
+    
+    // Delete any duplicate records
+    for (const duplicate of duplicates) {
+      console.log(`🗑️ Removing duplicate record: ${duplicate.id}`);
+      await deleteRecord(duplicate.id);
+    }
+    
+    // Update the original record
+    return await updateRecord(id, {
+      synced: true,
+      syncedAt: new Date().toISOString(),
+      serverResponse,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Failed to mark record as synced:', error);
+    throw error;
+  }
 };
 
 /**
@@ -560,6 +639,109 @@ export const getDatabaseStats = async () => {
 };
 
 /**
+ * Clean up duplicate records and fix invalid timestamps
+ */
+export const cleanupDatabase = async () => {
+  if (!db) await initializeDatabase();
+  
+  try {
+    console.log('🧹 Starting database cleanup...');
+    
+    const allRecords = await getAllRecords();
+    const recordsToUpdate = [];
+    const recordsToDelete = [];
+    
+    // Group records by healthId to find duplicates
+    const recordsByHealthId = {};
+    
+    for (const record of allRecords) {
+      if (!record.healthId) continue;
+      
+      if (!recordsByHealthId[record.healthId]) {
+        recordsByHealthId[record.healthId] = [];
+      }
+      recordsByHealthId[record.healthId].push(record);
+    }
+    
+    // Process each group of records
+    for (const [healthId, records] of Object.entries(recordsByHealthId)) {
+      if (records.length > 1) {
+        console.log(`Found ${records.length} duplicate records for healthId: ${healthId}`);
+        
+        // Sort records by priority:
+        // 1. Synced records first
+        // 2. Most recent timestamp
+        // 3. Has valid date
+        const sortedRecords = records.sort((a, b) => {
+          // Synced records take precedence
+          if (a.synced && !b.synced) return -1;
+          if (!a.synced && b.synced) return 1;
+          
+          // Then check for valid dates
+          const dateA = new Date(a.timestamp || a.createdAt || 0);
+          const dateB = new Date(b.timestamp || b.createdAt || 0);
+          const isValidA = !isNaN(dateA.getTime());
+          const isValidB = !isNaN(dateB.getTime());
+          
+          if (isValidA && !isValidB) return -1;
+          if (!isValidA && isValidB) return 1;
+          
+          // Finally sort by timestamp
+          return dateB.getTime() - dateA.getTime();
+        });
+        
+        // Keep the first (highest priority) record, mark others for deletion
+        const keepRecord = sortedRecords[0];
+        const deleteRecords = sortedRecords.slice(1);
+        
+        // Fix timestamp if invalid
+        if (!keepRecord.timestamp || isNaN(new Date(keepRecord.timestamp).getTime())) {
+          keepRecord.timestamp = keepRecord.createdAt || new Date().toISOString();
+          recordsToUpdate.push(keepRecord);
+        }
+        
+        // Mark duplicates for deletion
+        recordsToDelete.push(...deleteRecords.map(r => r.id));
+      } else {
+        // Single record - just fix timestamp if needed
+        const record = records[0];
+        if (!record.timestamp || isNaN(new Date(record.timestamp).getTime())) {
+          record.timestamp = record.createdAt || new Date().toISOString();
+          recordsToUpdate.push(record);
+        }
+      }
+    }
+    
+    // Update records with fixed timestamps
+    for (const record of recordsToUpdate) {
+      await updateRecord(record.id, {
+        timestamp: record.timestamp,
+        updatedAt: new Date().toISOString()
+      });
+    }
+    
+    // Delete duplicate records
+    for (const recordId of recordsToDelete) {
+      await deleteRecord(recordId);
+    }
+    
+    console.log(`✅ Database cleanup completed: ${recordsToUpdate.length} records updated, ${recordsToDelete.length} duplicates removed`);
+    
+    return {
+      success: true,
+      updatedCount: recordsToUpdate.length,
+      deletedCount: recordsToDelete.length
+    };
+  } catch (error) {
+    console.error('❌ Database cleanup failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
  * Recover from corrupted database by deleting and recreating it
  */
 export const recoverDatabase = async () => {
@@ -601,6 +783,15 @@ export const recoverDatabase = async () => {
     console.error('❌ Database recovery failed:', error);
     return { success: false, error: error.message };
   }
+};
+
+/**
+ * Clear unsynced records cache
+ */
+export const clearUnsyncedRecordsCache = () => {
+  unsyncedRecordsCache = null;
+  cacheTimestamp = 0;
+  console.log('🗑️ Cleared unsynced records cache');
 };
 
 /**

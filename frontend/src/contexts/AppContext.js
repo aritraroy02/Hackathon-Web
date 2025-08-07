@@ -406,10 +406,12 @@ export const AppProvider = ({ children }) => {
 
     // Check if already loaded and not forcing refresh
     if (state.mongoRecordsLoaded && !force) {
+      console.log('📋 MongoDB records already loaded, skipping');
       return;
     }
 
     try {
+      console.log('🔄 Loading MongoDB records...');
       const { fetchUserRecords } = await import('../utils/uploadService');
       const result = await fetchUserRecords(user);
       if (result.success) {

@@ -41,7 +41,27 @@ i18n
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage']
+      caches: ['localStorage'],
+      // Convert language codes to supported ones
+      convertDetectedLanguage: (lng) => {
+        // Map browser language codes to supported ones
+        const languageMap = {
+          'en-GB': 'en',
+          'en-US': 'en',
+          'en-CA': 'en',
+          'en-AU': 'en',
+          'es-ES': 'es',
+          'es-MX': 'es',
+          'fr-FR': 'fr',
+          'fr-CA': 'fr',
+          'hi-IN': 'hi',
+          'zh-CN': 'zh',
+          'zh-TW': 'zh',
+          'zh-HK': 'zh'
+        };
+        
+        return languageMap[lng] || lng;
+      }
     }
   });
 

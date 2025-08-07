@@ -31,12 +31,13 @@ import {
   Delete as DeleteIcon,
   Info as InfoIcon,
   Warning as WarningIcon,
-  Check as CheckIcon
+  Check as CheckIcon,
+  CleaningServices as CleaningServicesIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { saveSettings, getSettings, clearAllData, getDatabaseStats } from '../../utils/database';
+import { saveSettings, getSettings, clearAllData, getDatabaseStats, cleanupDatabase } from '../../utils/database';
 import { getCacheStorageUsage, clearAllCaches } from '../../utils/serviceWorker';
 
 const languages = [
@@ -143,6 +144,22 @@ const SettingsPage = () => {
     } catch (error) {
       console.error('Failed to clear cache:', error);
       showNotification('Failed to clear cache', 'error');
+    }
+  };
+
+  const handleCleanupDatabase = async () => {
+    try {
+      const result = await cleanupDatabase();
+      if (result.success) {
+        showNotification(`Database cleaned: ${result.updatedCount} records updated, ${result.deletedCount} duplicates removed`, 'success');
+        // Reload stats
+        loadDatabaseStats();
+      } else {
+        showNotification('Database cleanup failed', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to cleanup database:', error);
+      showNotification('Failed to cleanup database', 'error');
     }
   };
 
@@ -459,6 +476,15 @@ const SettingsPage = () => {
           </Alert>
           
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              color="warning"
+              startIcon={<CleaningServicesIcon />}
+              onClick={handleCleanupDatabase}
+            >
+              Cleanup Database
+            </Button>
+            
             <Button
               variant="outlined"
               color="error"

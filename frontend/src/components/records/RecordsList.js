@@ -46,7 +46,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllRecords, deleteRecord } from '../../utils/database';
+import { getAllRecords, deleteRecord, cleanupDatabase } from '../../utils/database';
 import { uploadRecordsBatch } from '../../utils/uploadService';
 import { checkInternetConnectivity } from '../../utils/networkUtils';
 
@@ -72,6 +72,9 @@ const RecordsList = () => {
 
   const loadRecords = useCallback(async () => {
     try {
+      // Run cleanup to fix any duplicate records or invalid timestamps
+      await cleanupDatabase();
+      
       const allRecords = await getAllRecords();
       setRecords(allRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
     } catch (error) {
@@ -331,11 +334,24 @@ const RecordsList = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'No date';
+    
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
+    try {
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Invalid date';
+    }
   };
 
   const getAgeGroup = (age) => {
