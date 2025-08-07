@@ -24,30 +24,34 @@ import {
   FormHelperText,
   Divider
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs';
-import 'dayjs/locale/en';
-import 'dayjs/locale/hi'; 
-import 'dayjs/locale/es';
-import 'dayjs/locale/fr';
-import 'dayjs/locale/zh';
-import { useTranslation } from 'react-i18next';
-
-
 import {
   Save as SaveIcon,
   Person as PersonIcon,
   Height as HeightIcon,
   MonitorWeight as WeightIcon,
 } from '@mui/icons-material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveRecord, generateHealthId } from '../../utils/database';
 import { getLocationWithFallback } from '../../utils/locationService';
 import PhotoCapture from './PhotoCapture';
 import FormValidation from './FormValidation';
+
+// Import dayjs locales with error handling
+try {
+  require('dayjs/locale/en');
+  require('dayjs/locale/hi');
+  require('dayjs/locale/es');
+  require('dayjs/locale/fr');
+  require('dayjs/locale/zh-cn');
+} catch (error) {
+  console.warn('Some dayjs locales failed to load:', error.message);
+}
 
 
 const ChildForm = () => {
@@ -60,14 +64,19 @@ const ChildForm = () => {
       'hi': 'hi',
       'es': 'es', 
       'fr': 'fr',
-      'zh': 'zh'
+      'zh': 'zh-cn'
     };
     return localeMap[lang] || 'en';
   };
 
-  // Set dayjs locale based on current language
+  // Set dayjs locale based on current language with error handling
   const currentLocale = getDateLocale(i18n.language);
-  dayjs.locale(currentLocale);
+  try {
+    dayjs.locale(currentLocale);
+  } catch (error) {
+    console.warn(`Failed to set dayjs locale to ${currentLocale}, using default:`, error);
+    dayjs.locale('en'); // Fallback to English
+  }
   
   const malnutritionOptions = [
     t('child.form.malnutrition.stunting'),

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Browser Data - Emergency Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .success {
+            background: #28a745;
+        }
+        .success:hover {
+            background: #218838;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Emergency Browser Data Clear</h1>
+        <p>If the Child Health PWA is stuck in an infinite reload loop, use this tool to clear all browser data.</p>
+        
+        <h3>Step 1: Clear All Storage</h3>
+        <button onclick="clearAllData()">Clear All Data</button>
+        
+        <h3>Step 2: Clear Specific Items</h3>
+        <button onclick="clearLocalStorage()">Clear LocalStorage</button>
+        <button onclick="clearSessionStorage()">Clear SessionStorage</button>
+        <button onclick="clearIndexedDB()">Clear IndexedDB</button>
+        
+        <h3>Step 3: Reset Browser</h3>
+        <button class="success" onclick="reloadPage()">Reload Page</button>
+        
+        <div class="log" id="log">Click buttons above to clear data...</div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function logMessage(message) {
+            log.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+        }
+        
+        function clearLocalStorage() {
+            try {
+                const itemCount = localStorage.length;
+                localStorage.clear();
+                logMessage(`✅ Cleared ${itemCount} localStorage items`);
+            } catch (error) {
+                logMessage(`❌ Error clearing localStorage: ${error.message}`);
+            }
+        }
+        
+        function clearSessionStorage() {
+            try {
+                const itemCount = sessionStorage.length;
+                sessionStorage.clear();
+                logMessage(`✅ Cleared ${itemCount} sessionStorage items`);
+            } catch (error) {
+                logMessage(`❌ Error clearing sessionStorage: ${error.message}`);
+            }
+        }
+        
+        function clearIndexedDB() {
+            try {
+                // Clear Child Health PWA database
+                const deleteReq = indexedDB.deleteDatabase('ChildHealthPWA');
+                deleteReq.onsuccess = () => {
+                    logMessage('✅ Cleared ChildHealthPWA IndexedDB');
+                };
+                deleteReq.onerror = () => {
+                    logMessage('❌ Error clearing ChildHealthPWA IndexedDB');
+                };
+                
+                // Clear other potential databases
+                const deleteReq2 = indexedDB.deleteDatabase('ChildHealthDB');
+                deleteReq2.onsuccess = () => {
+                    logMessage('✅ Cleared ChildHealthDB IndexedDB');
+                };
+                deleteReq2.onerror = () => {
+                    logMessage('❌ Error clearing ChildHealthDB IndexedDB');
+                };
+                
+                logMessage('🔄 IndexedDB deletion initiated...');
+            } catch (error) {
+                logMessage(`❌ Error clearing IndexedDB: ${error.message}`);
+            }
+        }
+        
+        function clearAllData() {
+            logMessage('🚨 Starting emergency data clear...');
+            
+            // Clear logout flag
+            try {
+                delete window.__LOGOUT_IN_PROGRESS__;
+                logMessage('✅ Cleared logout flag');
+            } catch (error) {
+                logMessage(`⚠️ Logout flag error: ${error.message}`);
+            }
+            
+            clearLocalStorage();
+            clearSessionStorage();
+            clearIndexedDB();
+            
+            // Clear service worker cache
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(registration => {
+                        registration.unregister();
+                        logMessage('✅ Unregistered service worker');
+                    });
+                });
+            }
+            
+            // Clear caches
+            if ('caches' in window) {
+                caches.keys().then(cacheNames => {
+                    cacheNames.forEach(cacheName => {
+                        caches.delete(cacheName);
+                        logMessage(`✅ Cleared cache: ${cacheName}`);
+                    });
+                });
+            }
+            
+            logMessage('🎉 Emergency clear completed! Now reload the page.');
+        }
+        
+        function reloadPage() {
+            logMessage('🔄 Reloading page...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+        
+        // Auto-clear if URL has ?clear parameter
+        if (window.location.search.includes('clear=true')) {
+            logMessage('🤖 Auto-clearing data due to URL parameter...');
+            clearAllData();
+            setTimeout(reloadPage, 3000);
+        }
+    </script>
+</body>
+</html>

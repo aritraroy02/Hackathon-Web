@@ -31,17 +31,51 @@ function AppContent() {
     // Clear any temp data that might cause redirects
     localStorage.removeItem('childFormTempData');
     
+    // Clear logout flag if it exists from a previous session
+    delete window.__LOGOUT_IN_PROGRESS__;
+    
     // Initialize databases and check existing auth
     const initializeApp = async () => {
       try {
-        // Initialize IndexedDB for offline storage
-        await initializeDatabase();
-        console.log('IndexedDB initialized');
+        console.log('Initializing app...');
+        
+        // Initialize IndexedDB for offline storage with recovery
+        try {
+          await initializeDatabase();
+          console.log('IndexedDB initialized successfully');
+        } catch (dbError) {
+          console.warn('Database initialization failed, attempting recovery:', dbError.message);
+          
+          // Import recovery function dynamically to avoid circular dependencies
+          const { recoverDatabase } = await import('./utils/database');
+          const recoveryResult = await recoverDatabase();
+          
+          if (recoveryResult.success) {
+            console.log('✅ Database recovery successful');
+          } else {
+            console.error('❌ Database recovery failed, continuing without database');
+            // Clear potentially corrupted localStorage as fallback
+            try {
+              localStorage.clear();
+            } catch (clearError) {
+              console.error('Failed to clear localStorage:', clearError);
+            }
+          }
+        }
         
         // Check for existing authentication
         await checkExistingAuth();
+        console.log('Auth check completed');
       } catch (error) {
         console.error('App initialization failed:', error);
+        // Clear potentially corrupted data if initialization fails
+        try {
+          localStorage.removeItem('authUser');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('childFormDraft');
+        } catch (cleanupError) {
+          console.error('Failed to clean up corrupted data:', cleanupError);
+        }
       }
     };
 
@@ -75,17 +109,25 @@ function AppContent() {
     }
   }, [isAuthenticated, clearMongoRecords]);
 
-  // Auto-sync when user comes online
+  // Auto-sync when user comes online (with safety checks)
   useEffect(() => {
-    if (state.isOnline && isAuthenticated && user && state.settings.syncOnReconnect) {
+    // Skip if logout is in progress
+    if (window.__LOGOUT_IN_PROGRESS__) {
+      return;
+    }
+    
+    if (state.isOnline && isAuthenticated && user && state.settings.syncOnReconnect && !state.isSyncing) {
       // Delay auto-sync slightly to ensure network is stable
       const timer = setTimeout(() => {
-        triggerAutoSync(user);
+        // Double-check conditions haven't changed
+        if (!window.__LOGOUT_IN_PROGRESS__ && state.isOnline && isAuthenticated && user && !state.isSyncing) {
+          triggerAutoSync(user);
+        }
       }, 2000);
       
       return () => clearTimeout(timer);
     }
-  }, [state.isOnline, isAuthenticated, user, state.settings.syncOnReconnect, triggerAutoSync]);
+  }, [state.isOnline, isAuthenticated, user, state.settings.syncOnReconnect, state.isSyncing, triggerAutoSync]);
 
   const getNotificationSeverity = (type) => {
     switch (type) {

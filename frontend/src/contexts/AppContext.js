@@ -430,6 +430,12 @@ export const AppProvider = ({ children }) => {
     if (!user || !state.isOnline || state.isSyncing) {
       return;
     }
+    
+    // Skip sync if logout is in progress
+    if (window.__LOGOUT_IN_PROGRESS__) {
+      console.log('⚠️ Logout in progress, skipping auto-sync trigger');
+      return;
+    }
 
     setSyncing(true);
     showNotification('Syncing offline data...', 'info');

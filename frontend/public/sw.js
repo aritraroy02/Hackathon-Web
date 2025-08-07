@@ -25,7 +25,8 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('[ServiceWorker] Installation complete');
-        return self.skipWaiting();
+        // Don't skip waiting to prevent immediate takeover
+        return Promise.resolve();
       })
   );
 });
@@ -46,7 +47,8 @@ self.addEventListener('activate', (event) => {
       );
     }).then(() => {
       console.log('[ServiceWorker] Activation complete');
-      return self.clients.claim();
+      // Don't claim clients immediately to prevent reload issues
+      return Promise.resolve();
     })
   );
 });
@@ -55,6 +57,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Skip caching for service worker updates to prevent infinite reload
+  if (url.pathname.includes('sw.js') || url.pathname.includes('service-worker')) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   // Handle API requests separately
   if (url.pathname.startsWith('/api/')) {
@@ -98,7 +106,12 @@ self.addEventListener('sync', (event) => {
   console.log('[ServiceWorker] Background sync', event.tag);
   
   if (event.tag === 'background-sync-data') {
-    event.waitUntil(doBackgroundSync());
+    // Check if sync is stopped before proceeding
+    if (!self.__SYNC_STOPPED__) {
+      event.waitUntil(doBackgroundSync());
+    } else {
+      console.log('[ServiceWorker] Sync stopped, skipping background sync');
+    }
   }
 });
 
@@ -168,12 +181,32 @@ self.addEventListener('message', (event) => {
       })
     );
   }
+  
+  if (event.data && event.data.type === 'STOP_SYNC') {
+    console.log('[ServiceWorker] Stopping sync due to logout');
+    // Set a flag to prevent future sync operations
+    self.__SYNC_STOPPED__ = true;
+  }
+  
+  if (event.data && event.data.type === 'RESET_SYNC') {
+    console.log('[ServiceWorker] Resetting sync after login');
+    // Clear the sync stopped flag
+    delete self.__SYNC_STOPPED__;
+  }
+ 
+
 });
 
 // Helper function to perform background sync
 async function doBackgroundSync() {
   try {
     console.log('[ServiceWorker] Performing background sync');
+    
+    // Check if sync has been stopped (e.g., during logout)
+    if (self.__SYNC_STOPPED__) {
+      console.log('[ServiceWorker] Sync stopped, skipping background sync');
+      return;
+    }
     
     // Open IndexedDB and get unsynced records
     const db = await openDB();
@@ -186,6 +219,12 @@ async function doBackgroundSync() {
     
     // Try to sync each record
     for (const record of unsyncedRecords) {
+      // Check again before each record sync
+      if (self.__SYNC_STOPPED__) {
+        console.log('[ServiceWorker] Sync stopped during record processing');
+        return;
+      }
+      
       try {
         await syncRecord(record);
         await markRecordAsSynced(db, record.id);
@@ -198,10 +237,14 @@ async function doBackgroundSync() {
     // Notify all clients about sync completion
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
-      client.postMessage({
-        type: 'SYNC_COMPLETE',
-        syncedCount: unsyncedRecords.length
-      });
+      try {
+        client.postMessage({
+          type: 'SYNC_COMPLETE',
+          syncedCount: unsyncedRecords.length
+        });
+      } catch (error) {
+        console.log('[ServiceWorker] Could not notify client:', error.message);
+      }
     });
     
   } catch (error) {
@@ -222,13 +265,53 @@ function openDB() {
 // Helper function to get unsynced records
 function getUnsyncedRecords(db) {
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['child_records'], 'readonly');
-    const store = transaction.objectStore('child_records');
-    const index = store.index('synced');
-    const request = index.getAll(false);
-    
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    try {
+      const transaction = db.transaction(['child_records'], 'readonly');
+      const store = transaction.objectStore('child_records');
+      
+      // Use store.getAll() instead of index to avoid index corruption issues
+      const request = store.getAll();
+      
+      request.onsuccess = () => {
+        try {
+          const allRecords = request.result || [];
+          const unsyncedRecords = [];
+          
+          // Filter for unsynced records manually
+          for (const record of allRecords) {
+            if (record.synced !== true) {
+              unsyncedRecords.push(record);
+            }
+          }
+          
+          console.log(`[ServiceWorker] Found ${unsyncedRecords.length} unsynced records`);
+          resolve(unsyncedRecords);
+        } catch (processingError) {
+          console.error('[ServiceWorker] Error processing records:', processingError);
+          resolve([]);
+        }
+      };
+      
+      request.onerror = () => {
+        console.error('[ServiceWorker] Failed to get records from IndexedDB:', request.error);
+        resolve([]);
+      };
+      
+      transaction.onerror = () => {
+        console.error('[ServiceWorker] Transaction failed for records:', transaction.error);
+        resolve([]);
+      };
+      
+      // Add timeout to prevent hanging
+      setTimeout(() => {
+        console.warn('[ServiceWorker] Database query timeout, returning empty array');
+        resolve([]);
+      }, 5000);
+      
+    } catch (setupError) {
+      console.error('[ServiceWorker] Error setting up records query:', setupError);
+      resolve([]);
+    }
   });
 }
 
@@ -283,8 +366,10 @@ async function cacheUrls(urls) {
 // Network detection
 self.addEventListener('online', () => {
   console.log('[ServiceWorker] Device is online');
-  // Trigger background sync when device comes online
-  self.registration.sync.register('background-sync-data');
+  // Only trigger background sync if not stopped
+  if (!self.__SYNC_STOPPED__) {
+    self.registration.sync.register('background-sync-data');
+  }
 });
 
 self.addEventListener('offline', () => {

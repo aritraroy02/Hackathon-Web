@@ -339,35 +339,91 @@ export const deleteRecord = async (id) => {
  * Get unsynced records
  */
 export const getUnsyncedRecords = async () => {
-  if (!db) await initializeDatabase();
-  
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORES.RECORDS], 'readonly');
-    const store = transaction.objectStore(STORES.RECORDS);
-    const index = store.index('synced');
-    const request = index.getAll(false);
+  try {
+    // Skip entirely if logout is in progress
+    if (window.__LOGOUT_IN_PROGRESS__) {
+      console.log('⚠️ Skipping getUnsyncedRecords - logout in progress');
+      return [];
+    }
     
-    request.onsuccess = () => {
-      const records = request.result.map(record => {
-        if (record.encryptedData) {
-          const decryptedData = decryptData(record.encryptedData);
-          return {
-            ...record,
-            ...decryptedData
-          };
-        }
-        return record;
-      });
-      
-      resolve(records);
-    };
+    if (!db) await initializeDatabase();
     
-    request.onerror = () => {
-      reject(new Error('Failed to get unsynced records'));
-    };
-  });
+    return new Promise((resolve) => {
+      try {
+        const transaction = db.transaction([STORES.RECORDS], 'readonly');
+        const store = transaction.objectStore(STORES.RECORDS);
+        
+        // Use store.getAll() instead of index to avoid index corruption issues
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+          try {
+            const allRecords = request.result || [];
+            const unsyncedRecords = [];
+            
+            // Filter for unsynced records manually
+            for (const record of allRecords) {
+              // Skip if logout started during processing
+              if (window.__LOGOUT_IN_PROGRESS__) {
+                console.log('⚠️ Logout detected during processing, stopping');
+                resolve([]);
+                return;
+              }
+              
+              // Check if record is not synced
+              if (record.synced !== true) {
+                try {
+                  if (record.encryptedData) {
+                    const decryptedData = decryptData(record.encryptedData);
+                    unsyncedRecords.push({
+                      ...record,
+                      ...decryptedData
+                    });
+                  } else {
+                    unsyncedRecords.push(record);
+                  }
+                } catch (decryptError) {
+                  console.warn('Failed to decrypt record, skipping:', decryptError);
+                  // Still add record without decryption if needed for basic operations
+                  unsyncedRecords.push(record);
+                }
+              }
+            }
+            
+            console.log(`✅ Found ${unsyncedRecords.length} unsynced records`);
+            resolve(unsyncedRecords);
+          } catch (processingError) {
+            console.error('Error processing records:', processingError);
+            resolve([]);
+          }
+        };
+        
+        request.onerror = () => {
+          console.error('Failed to get records from IndexedDB:', request.error);
+          resolve([]);
+        };
+        
+        transaction.onerror = () => {
+          console.error('Transaction failed for records:', transaction.error);
+          resolve([]);
+        };
+        
+        // Add timeout to prevent hanging
+        setTimeout(() => {
+          console.warn('⚠️ Database query timeout, returning empty array');
+          resolve([]);
+        }, 5000);
+        
+      } catch (setupError) {
+        console.error('Error setting up records query:', setupError);
+        resolve([]);
+      }
+    });
+  } catch (initError) {
+    console.error('Failed to initialize database for unsynced records:', initError);
+    return [];
+  }
 };
-
 /**
  * Mark record as synced
  */
@@ -504,34 +560,112 @@ export const getDatabaseStats = async () => {
 };
 
 /**
+ * Recover from corrupted database by deleting and recreating it
+ */
+export const recoverDatabase = async () => {
+  try {
+    console.log('🛠️ Starting database recovery...');
+    
+    // Close existing database connection
+    if (db) {
+      db.close();
+      db = null;
+    }
+    
+    // Delete the corrupted database
+    await new Promise((resolve, reject) => {
+      const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+      deleteRequest.onsuccess = () => {
+        console.log('🗑️ Deleted corrupted database');
+        resolve();
+      };
+      deleteRequest.onerror = () => {
+        console.warn('⚠️ Failed to delete database, continuing anyway');
+        resolve(); // Don't fail the recovery
+      };
+      deleteRequest.onblocked = () => {
+        console.warn('⚠️ Database deletion blocked, continuing anyway');
+        resolve();
+      };
+    });
+    
+    // Wait a moment for cleanup
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Reinitialize the database
+    await initializeDatabase();
+    
+    console.log('✅ Database recovery completed successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Database recovery failed:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Clear all user data from IndexedDB and localStorage
  * This is used for secure logout
  */
 export const clearAllUserData = async () => {
   try {
-    // Clear IndexedDB data
-    if (!db) await initializeDatabase();
+    console.log('🔄 Starting user data cleanup...');
     
-    const transaction = db.transaction([STORES.RECORDS, STORES.SETTINGS, STORES.SYNC_QUEUE], 'readwrite');
-    
-    // Clear all stores
-    await Promise.all([
-      new Promise((resolve, reject) => {
-        const request = transaction.objectStore(STORES.RECORDS).clear();
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-      }),
-      new Promise((resolve, reject) => {
-        const request = transaction.objectStore(STORES.SETTINGS).clear();
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-      }),
-      new Promise((resolve, reject) => {
-        const request = transaction.objectStore(STORES.SYNC_QUEUE).clear();
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-      })
-    ]);
+    // Clear IndexedDB data with recovery fallback
+    try {
+      if (!db) await initializeDatabase();
+      
+      const transaction = db.transaction([STORES.RECORDS, STORES.SETTINGS, STORES.SYNC_QUEUE], 'readwrite');
+      
+      // Clear all stores with timeout protection
+      await Promise.all([
+        new Promise((resolve, reject) => {
+          const request = transaction.objectStore(STORES.RECORDS).clear();
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+          
+          // Add timeout
+          setTimeout(() => {
+            if (request.readyState === 'pending') {
+              console.warn('⚠️ Records clear timeout, continuing');
+              resolve();
+            }
+          }, 3000);
+        }),
+        new Promise((resolve, reject) => {
+          const request = transaction.objectStore(STORES.SETTINGS).clear();
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+          
+          // Add timeout
+          setTimeout(() => {
+            if (request.readyState === 'pending') {
+              console.warn('⚠️ Settings clear timeout, continuing');
+              resolve();
+            }
+          }, 3000);
+        }),
+        new Promise((resolve, reject) => {
+          const request = transaction.objectStore(STORES.SYNC_QUEUE).clear();
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+          
+          // Add timeout
+          setTimeout(() => {
+            if (request.readyState === 'pending') {
+              console.warn('⚠️ Sync queue clear timeout, continuing');
+              resolve();
+            }
+          }, 3000);
+        })
+      ]);
+      
+      console.log('✅ IndexedDB cleared successfully');
+    } catch (dbError) {
+      console.warn('⚠️ Database clear failed, attempting recovery:', dbError.message);
+      // If database operations fail, try recovery
+      await recoverDatabase();
+    }
 
     // Clear localStorage
     const keysToRemove = [];

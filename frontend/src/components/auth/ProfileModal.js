@@ -32,7 +32,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { getLocationWithFallback, checkLocationPermission } from '../../utils/locationService';
 
 const ProfileModal = ({ open, onClose }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const { state, setLocation, setLocationLoading, setLocationError, showNotification } = useAppContext();
   const [locationFetchRequested, setLocationFetchRequested] = useState(false);
 
@@ -101,9 +101,16 @@ const ProfileModal = ({ open, onClose }) => {
   }, [open, user, handleFetchLocation, locationFetchRequested, state.currentLocation]);
 
   const handleLogout = async () => {
+    // Prevent double logout attempts
+    if (isLoggingOut) {
+      console.log('Logout already in progress, ignoring additional request');
+      return;
+    }
+    
     if (window.confirm('Are you sure you want to logout? This will clear all offline data from this device.')) {
       try {
         await logout();
+        // Only close modal after logout is completely finished
         onClose();
       } catch (error) {
         console.error('Logout error:', error);
@@ -126,7 +133,7 @@ const ProfileModal = ({ open, onClose }) => {
   return (
     <Dialog 
       open={open} 
-      onClose={onClose}
+      onClose={isLoggingOut ? undefined : onClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
@@ -138,7 +145,7 @@ const ProfileModal = ({ open, onClose }) => {
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         User Profile
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} size="small" disabled={isLoggingOut}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -392,16 +399,17 @@ const ProfileModal = ({ open, onClose }) => {
       </DialogContent>
 
       <DialogActions sx={{ p: 2, pt: 1 }}>
-        <Button onClick={onClose}>
+        <Button onClick={onClose} disabled={isLoggingOut}>
           Close
         </Button>
         <Button 
           onClick={handleLogout}
           variant="outlined"
           color="error"
-          startIcon={<LogoutIcon />}
+          disabled={isLoggingOut}
+          startIcon={isLoggingOut ? <CircularProgress size={20} /> : <LogoutIcon />}
         >
-          Logout
+          {isLoggingOut ? 'Logging out...' : 'Logout'}
         </Button>
       </DialogActions>
     </Dialog>

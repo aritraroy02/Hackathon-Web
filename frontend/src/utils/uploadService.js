@@ -340,6 +340,12 @@ export const autoSyncOfflineRecords = async (user, onProgress = null) => {
     if (!user) {
       throw new Error('User authentication required for auto-sync');
     }
+    
+    // Check if logout is in progress - if so, skip sync to prevent database errors
+    if (window.__LOGOUT_IN_PROGRESS__) {
+      console.log('⚠️ Logout in progress, skipping auto-sync');
+      return { success: true, syncedCount: 0, failedCount: 0 };
+    }
 
     // Import database functions dynamically to avoid circular dependency
     const { markRecordSynced, getUnsyncedRecords } = await import('./database');
