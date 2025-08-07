@@ -162,26 +162,60 @@ const PhotoCapture = ({ photo, onPhotoCapture, onPhotoClear }) => {
   };
 
   return (
-    <Box>
-      <Typography variant="subtitle1" gutterBottom>
+    <Box 
+      sx={{
+        p: 3,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        bgcolor: 'background.paper',
+        boxShadow: (theme) => theme.palette.mode === 'dark' 
+          ? '0 2px 8px rgba(0,0,0,0.3)' 
+          : '0 2px 8px rgba(0,0,0,0.1)',
+        textAlign: 'center'
+      }}
+    >
+      <Typography variant="subtitle1" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
         Child's Photo
       </Typography>
       
       {photo ? (
-        <Card sx={{ maxWidth: 300, mb: 2 }}>
-          <CardMedia
-            component="img"
-            height="200"
-            image={photo}
-            alt="Child's photo"
-            sx={{ objectFit: 'cover' }}
-          />
-          <CardActions>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2, py: 2 }}>
+          <Box
+            sx={{
+              width: 180,
+              height: 180,
+              borderRadius: '50%',
+              overflow: 'hidden',
+              border: '4px solid',
+              borderColor: 'primary.main',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'background.paper',
+              boxShadow: (theme) => theme.palette.mode === 'dark' 
+                ? '0 4px 20px rgba(0,0,0,0.4)' 
+                : '0 4px 20px rgba(0,0,0,0.1)',
+              margin: '0 auto'
+            }}
+          >
+            <img
+              src={photo}
+              alt="Child's photo"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
             <Button
               size="small"
               color="primary"
               onClick={openDialog}
               startIcon={<CameraIcon />}
+              variant="outlined"
             >
               Retake
             </Button>
@@ -190,38 +224,84 @@ const PhotoCapture = ({ photo, onPhotoCapture, onPhotoClear }) => {
               color="error"
               onClick={onPhotoClear}
               startIcon={<DeleteIcon />}
+              variant="outlined"
             >
               Remove
             </Button>
-          </CardActions>
-        </Card>
+          </Box>
+        </Box>
       ) : (
-        <Box
-          sx={{
-            border: '2px dashed',
-            borderColor: 'grey.300',
-            borderRadius: 2,
-            p: 4,
-            textAlign: 'center',
-            bgcolor: 'grey.50',
-            cursor: 'pointer',
-            '&:hover': {
+        <Box sx={{ py: 2 }}>
+          <Box
+            sx={{
+              width: 180,
+              height: 180,
+              border: '3px dashed',
               borderColor: 'primary.main',
-              bgcolor: 'primary.light',
-              '& .MuiTypography-root': {
-                color: 'primary.contrastText'
+              borderRadius: '50%', // Make it perfectly round (O-shaped)
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(96, 165, 250, 0.1)' 
+                : 'primary.light',
+              cursor: 'pointer',
+              margin: '0 auto', // Center horizontally
+              transition: 'all 0.3s ease-in-out',
+              '&:hover': {
+                borderColor: 'primary.dark',
+                bgcolor: 'primary.main',
+                transform: 'scale(1.05)',
+                '& .MuiTypography-root': {
+                  color: (theme) => theme.palette.mode === 'dark' 
+                    ? theme.palette.primary.contrastText 
+                    : 'white'
+              },
+              '& .camera-icon': {
+                color: (theme) => theme.palette.mode === 'dark' 
+                  ? theme.palette.primary.contrastText 
+                  : 'white',
+                transform: 'scale(1.1)'
               }
             }
           }}
           onClick={openDialog}
         >
-          <CameraIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
-          <Typography variant="body1" color="text.secondary">
-            Tap to add child's photo
+          <CameraIcon 
+            className="camera-icon"
+            sx={{ 
+              fontSize: 42, 
+              color: 'primary.main', 
+              mb: 1,
+              transition: 'all 0.3s ease-in-out'
+            }} 
+          />
+          <Typography 
+            variant="body2" 
+            color="primary.main" 
+            sx={{ 
+              fontWeight: 600, 
+              mb: 0.5, 
+              textAlign: 'center',
+              lineHeight: 1.2,
+              px: 2
+            }}
+          >
+            Add Photo
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Camera or file upload
+          <Typography 
+            variant="caption" 
+            color="text.secondary" 
+            sx={{ 
+              textAlign: 'center',
+              lineHeight: 1.1,
+              px: 1
+            }}
+          >
+            Tap to capture
           </Typography>
+          </Box>
         </Box>
       )}
 

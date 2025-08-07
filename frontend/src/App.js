@@ -96,7 +96,14 @@ function AppContent() {
   };
 
   return (
-      <Box className="app-container">
+      <Box 
+        className="app-container"
+        sx={{
+          bgcolor: 'background.default',
+          minHeight: '100vh',
+          color: 'text.primary'
+        }}
+      >
         <Header />
         
         <OfflineIndicator 

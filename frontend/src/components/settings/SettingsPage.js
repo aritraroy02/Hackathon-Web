@@ -239,10 +239,10 @@ const SettingsPage = () => {
                   label="Language"
                 >
                   <MenuItem value="en">English</MenuItem>
-                  <MenuItem value="hi">हिंदी (Hindi)</MenuItem>
-                  <MenuItem value="bn">বাংলা (Bengali)</MenuItem>
-                  <MenuItem value="te">తెలుగు (Telugu)</MenuItem>
-                  <MenuItem value="ta">தமிழ் (Tamil)</MenuItem>
+                  <MenuItem value="fr">Français</MenuItem>
+                  <MenuItem value="es">Español</MenuItem>
+                  <MenuItem value="ar">العربية</MenuItem>
+                  <MenuItem value="zh">中文</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

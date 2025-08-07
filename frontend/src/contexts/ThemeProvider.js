@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme, useMediaQuery } from '@mui/material';
 import { useAppContext } from './AppContext';
 
@@ -20,24 +20,24 @@ const CustomThemeProvider = ({ children }) => {
       palette: {
         mode,
         primary: {
-          main: mode === 'dark' ? '#90caf9' : '#2196f3',
-          light: mode === 'dark' ? '#bbdefb' : '#64b5f6',
-          dark: mode === 'dark' ? '#42a5f5' : '#1976d2',
-          contrastText: mode === 'dark' ? '#000000' : '#ffffff',
+          main: mode === 'dark' ? '#2196f3' : '#1976d2', // Crisp blue
+          light: mode === 'dark' ? '#64b5f6' : '#42a5f5',
+          dark: mode === 'dark' ? '#1976d2' : '#1565c0',
+          contrastText: '#ffffff',
         },
         secondary: {
-          main: mode === 'dark' ? '#ffb74d' : '#ff9800',
-          light: mode === 'dark' ? '#ffc947' : '#ffb74d',
-          dark: mode === 'dark' ? '#ff8f00' : '#f57c00',
+          main: mode === 'dark' ? '#f5f5f5' : '#757575', // Clean gray/white
+          light: mode === 'dark' ? '#ffffff' : '#9e9e9e',
+          dark: mode === 'dark' ? '#e0e0e0' : '#616161',
           contrastText: mode === 'dark' ? '#000000' : '#ffffff',
         },
         background: {
-          default: mode === 'dark' ? '#121212' : '#f5f5f5',
-          paper: mode === 'dark' ? '#1e1e1e' : '#ffffff',
+          default: mode === 'dark' ? '#000000' : '#fafafa', // Pure black background
+          paper: mode === 'dark' ? '#121212' : '#ffffff', // Very dark gray for cards
         },
         text: {
-          primary: mode === 'dark' ? '#ffffff' : '#000000',
-          secondary: mode === 'dark' ? '#b0b0b0' : '#666666',
+          primary: mode === 'dark' ? '#ffffff' : '#212121', // Pure white text on dark
+          secondary: mode === 'dark' ? '#e0e0e0' : '#757575', // Light gray secondary text
         },
         error: {
           main: '#f44336',
@@ -49,12 +49,12 @@ const CustomThemeProvider = ({ children }) => {
           main: '#ff9800',
           light: '#ffb74d',
           dark: '#f57c00',
-          contrastText: mode === 'dark' ? '#000000' : '#ffffff',
+          contrastText: '#ffffff',
         },
         info: {
-          main: mode === 'dark' ? '#64b5f6' : '#2196f3',
-          light: mode === 'dark' ? '#90caf9' : '#64b5f6',
-          dark: mode === 'dark' ? '#2196f3' : '#1976d2',
+          main: mode === 'dark' ? '#29b6f6' : '#0288d1',
+          light: mode === 'dark' ? '#4fc3f7' : '#03a9f4',
+          dark: mode === 'dark' ? '#0277bd' : '#01579b',
           contrastText: '#ffffff',
         },
         success: {
@@ -63,6 +63,7 @@ const CustomThemeProvider = ({ children }) => {
           dark: '#388e3c',
           contrastText: '#ffffff',
         },
+        divider: mode === 'dark' ? '#333333' : '#e0e0e0', // Dark theme dividers
       },
       typography: {
         fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -105,13 +106,15 @@ const CustomThemeProvider = ({ children }) => {
             root: {
               borderRadius: 16,
               boxShadow: mode === 'dark' 
-                ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+                ? '0 8px 24px rgba(0, 0, 0, 0.8)' 
                 : '0 4px 12px rgba(0, 0, 0, 0.1)',
               transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+              backgroundColor: mode === 'dark' ? '#121212' : '#ffffff',
+              border: mode === 'dark' ? '1px solid #333333' : 'none',
               '&:hover': {
                 transform: 'translateY(-2px)',
                 boxShadow: mode === 'dark' 
-                  ? '0 8px 20px rgba(0, 0, 0, 0.4)' 
+                  ? '0 12px 32px rgba(0, 0, 0, 0.9)' 
                   : '0 8px 20px rgba(0, 0, 0, 0.15)',
               },
             },
@@ -127,10 +130,46 @@ const CustomThemeProvider = ({ children }) => {
               transition: 'all 0.2s ease-in-out',
             },
             contained: {
-              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+              boxShadow: mode === 'dark' 
+                ? '0 4px 12px rgba(33, 150, 243, 0.3)' 
+                : '0 4px 8px rgba(0, 0, 0, 0.2)',
               '&:hover': {
                 transform: 'translateY(-1px)',
-                boxShadow: '0 6px 12px rgba(0, 0, 0, 0.3)',
+                boxShadow: mode === 'dark' 
+                  ? '0 8px 20px rgba(33, 150, 243, 0.4)' 
+                  : '0 6px 12px rgba(0, 0, 0, 0.3)',
+              },
+            },
+            outlined: {
+              borderColor: mode === 'dark' ? '#333333' : undefined,
+              color: mode === 'dark' ? '#ffffff' : undefined,
+              '&:hover': {
+                borderColor: mode === 'dark' ? '#2196f3' : undefined,
+                backgroundColor: mode === 'dark' ? 'rgba(33, 150, 243, 0.1)' : undefined,
+              },
+            },
+          },
+        },
+        MuiTextField: {
+          styleOverrides: {
+            root: {
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: mode === 'dark' ? '#121212' : '#ffffff',
+                '& fieldset': {
+                  borderColor: mode === 'dark' ? '#333333' : '#e0e0e0',
+                },
+                '&:hover fieldset': {
+                  borderColor: mode === 'dark' ? '#555555' : '#bdbdbd',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: mode === 'dark' ? '#2196f3' : '#1976d2',
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: mode === 'dark' ? '#e0e0e0' : '#757575',
+              },
+              '& .MuiOutlinedInput-input': {
+                color: mode === 'dark' ? '#ffffff' : '#212121',
               },
             },
           },
@@ -138,22 +177,46 @@ const CustomThemeProvider = ({ children }) => {
         MuiAppBar: {
           styleOverrides: {
             root: {
-              backgroundImage: mode === 'dark'
-                ? 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)'
-                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: '0 0 20px 20px',
+              backgroundColor: mode === 'dark' ? '#1976d2' : '#1976d2',
+              backgroundImage: 'none',
               boxShadow: mode === 'dark'
-                ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
-                : '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                ? '0 4px 20px rgba(0, 0, 0, 0.5)'
+                : '0 2px 8px rgba(0, 0, 0, 0.1)',
             },
           },
         },
         MuiBottomNavigation: {
           styleOverrides: {
             root: {
-              borderTop: `1px solid ${mode === 'dark' ? '#333' : '#e0e0e0'}`,
-              backgroundColor: mode === 'dark' ? '#1e1e1e' : '#ffffff',
+              borderTop: `1px solid ${mode === 'dark' ? '#333333' : '#e0e0e0'}`,
+              backgroundColor: mode === 'dark' ? '#121212' : '#ffffff',
+            },
+          },
+        },
+        MuiTypography: {
+          styleOverrides: {
+            root: {
+              color: mode === 'dark' ? '#ffffff' : undefined,
+            },
+          },
+        },
+        MuiChip: {
+          styleOverrides: {
+            root: {
+              backgroundColor: mode === 'dark' ? '#333333' : '#e0e0e0',
+              color: mode === 'dark' ? '#ffffff' : '#212121',
+              '&.MuiChip-colorPrimary': {
+                backgroundColor: mode === 'dark' ? '#2196f3' : '#1976d2',
+                color: '#ffffff',
+              },
+            },
+          },
+        },
+        MuiPaper: {
+          styleOverrides: {
+            root: {
+              backgroundColor: mode === 'dark' ? '#121212' : '#ffffff',
+              color: mode === 'dark' ? '#ffffff' : '#212121',
             },
           },
         },
@@ -163,6 +226,20 @@ const CustomThemeProvider = ({ children }) => {
       },
     });
   }, [state?.settings?.theme, prefersDarkMode]); // Only depend on theme setting
+
+  // Set the data-theme attribute on document root for CSS variables
+  useEffect(() => {
+    let mode;
+    const themeMode = state?.settings?.theme || 'light';
+    
+    if (themeMode === 'auto') {
+      mode = prefersDarkMode ? 'dark' : 'light';
+    } else {
+      mode = themeMode;
+    }
+    
+    document.documentElement.setAttribute('data-theme', mode);
+  }, [state?.settings?.theme, prefersDarkMode]);
 
   return (
     <MuiThemeProvider theme={theme}>
