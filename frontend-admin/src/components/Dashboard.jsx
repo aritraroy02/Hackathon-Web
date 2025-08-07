@@ -403,23 +403,45 @@ function Dashboard() {
             <p className="chart-subtitle">Distribution of reported malnutrition signs</p>
           </div>
           <ResponsiveContainer width="100%" height={350}>
-            <PieChart>
-              <Pie
-                data={malnutritionPieData}
-                cx="50%"
-                cy="50%"
-                outerRadius={120}
-                fill="#8884d8"
-                dataKey="value"
-                label={({name, percentage}) => `${name}: ${percentage}%`}
+            <BarChart 
+              data={malnutritionPieData} 
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              layout="vertical"
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis 
+                type="number"
+                stroke="#64748b"
+                fontSize={12}
+              />
+              <YAxis 
+                type="category"
+                dataKey="name" 
+                stroke="#64748b"
+                fontSize={12}
+                width={120}
+                tick={{ fontSize: 11 }}
+              />
+              <Tooltip 
+                formatter={(value, name) => [`${value} children (${((value / data?.totalChildren) * 100).toFixed(1)}%)`, 'Count']}
+                labelFormatter={(label) => `Symptom: ${label}`}
+                contentStyle={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
+              />
+              <Bar 
+                dataKey="value" 
+                radius={[0, 4, 4, 0]}
+                fill="#ef4444"
               >
                 {malnutritionPieData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={malnutritionColors[index % malnutritionColors.length]} />
                 ))}
-              </Pie>
-              <Tooltip formatter={(value, name) => [`${value} children`, name]} />
-              <Legend />
-            </PieChart>
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
 
