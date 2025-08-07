@@ -8,10 +8,7 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  Alert,
-  Card,
-  CardMedia,
-  CardActions
+  Alert
 } from '@mui/material';
 import {
   CameraAlt as CameraIcon,
@@ -201,7 +198,7 @@ const PhotoCapture = ({ photo, onPhotoCapture, onPhotoClear }) => {
           >
             <img
               src={photo}
-              alt="Child's photo"
+              alt="Child"
               style={{
                 width: '100%',
                 height: '100%',
