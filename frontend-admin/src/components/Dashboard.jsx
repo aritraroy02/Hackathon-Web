@@ -163,15 +163,22 @@ function Dashboard() {
 
   // Process city data to show top cities and group small ones as "Others"
   const processCityData = (cityDist, totalChildren) => {
-    const cityEntries = Object.entries(cityDist || {})
+    if (!cityDist || !totalChildren) return [];
+    
+    const cityEntries = Object.entries(cityDist)
       .sort(([,a], [,b]) => b - a);
+    
+    console.log('Processing city data:', { totalChildren, cityEntries });
     
     const processedData = [];
     let otherCount = 0;
+    let otherCities = [];
     
     cityEntries.forEach(([city, count]) => {
       const percentage = (count / totalChildren) * 100;
-      if (percentage >= 5) {
+      console.log(`City: ${city}, Count: ${count}, Percentage: ${percentage.toFixed(1)}%`);
+      
+      if (percentage >= 5.0) {
         processedData.push({
           name: city,
           count: count,
@@ -179,11 +186,13 @@ function Dashboard() {
         });
       } else {
         otherCount += count;
+        otherCities.push(`${city} (${percentage.toFixed(1)}%)`);
       }
     });
     
     // Add "Others" category if there are cities with less than 5%
     if (otherCount > 0) {
+      console.log(`Grouping ${otherCities.length} cities into Others:`, otherCities);
       processedData.push({
         name: "Others",
         count: otherCount,
@@ -191,6 +200,7 @@ function Dashboard() {
       });
     }
     
+    console.log('Final processed data:', processedData);
     return processedData;
   };
 
