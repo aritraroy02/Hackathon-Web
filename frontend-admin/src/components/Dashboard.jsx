@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import { Users, Activity, AlertTriangle, Heart, MapPin, Clock, Search, Download, Plus, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import './Dashboard.css';
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -394,13 +396,31 @@ function Dashboard() {
         </div>
 
         {/* Malnutrition Analysis */}
-        <div className="chart-container medium">
+        <div 
+          className="chart-container medium clickable" 
+          onClick={() => navigate('/malnutrition-analysis')}
+          style={{ 
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            border: '2px solid transparent'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 25px rgba(239, 68, 68, 0.15)';
+            e.currentTarget.style.borderColor = '#ef4444';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'var(--card-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.1))';
+            e.currentTarget.style.borderColor = 'transparent';
+          }}
+        >
           <div className="chart-header">
             <h3 className="chart-title">
               <AlertTriangle size={20} />
               Malnutrition Symptoms Analysis
             </h3>
-            <p className="chart-subtitle">Distribution of reported malnutrition signs</p>
+            <p className="chart-subtitle">Distribution of reported malnutrition signs • Click for detailed analysis</p>
           </div>
           <ResponsiveContainer width="100%" height={350}>
             <BarChart 

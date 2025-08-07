@@ -9,6 +9,7 @@ import ChildrenList from './components/ChildrenList';
 import KYCManagement from './components/KYCManagement';
 import SettingsPage from './components/SettingsPage';
 import ChildLookup from './components/ChildLookup';
+import MalnutritionAnalysis from './components/MalnutritionAnalysis';
 import './App.css';
 
 // Navigation component
@@ -196,6 +197,7 @@ function App() {
             <Route path="/children" element={<ChildrenList />} />
             <Route path="/lookup" element={<ChildLookup />} />
             <Route path="/kyc" element={<KYCManagement />} />
+            <Route path="/malnutrition-analysis" element={<MalnutritionAnalysis />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/about" element={<About />} />
           </Routes>
