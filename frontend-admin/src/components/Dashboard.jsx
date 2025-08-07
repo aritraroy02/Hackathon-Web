@@ -163,44 +163,64 @@ function Dashboard() {
 
   // Process city data to show top cities and group small ones as "Others"
   const processCityData = (cityDist, totalChildren) => {
-    if (!cityDist || !totalChildren) return [];
+    console.log('🔍 PROCESSING CITY DATA - START');
+    console.log('Input cityDist:', cityDist);
+    console.log('Input totalChildren:', totalChildren);
+    
+    if (!cityDist || !totalChildren || totalChildren === 0) {
+      console.log('❌ Invalid input - returning empty array');
+      return [];
+    }
     
     const cityEntries = Object.entries(cityDist)
       .sort(([,a], [,b]) => b - a);
     
-    console.log('Processing city data:', { totalChildren, cityEntries });
+    console.log('📊 Sorted city entries:', cityEntries);
     
     const processedData = [];
     let otherCount = 0;
     let otherCities = [];
+    const threshold = 5.0;
+    
+    console.log(`🎯 Using threshold: ${threshold}%`);
     
     cityEntries.forEach(([city, count]) => {
       const percentage = (count / totalChildren) * 100;
-      console.log(`City: ${city}, Count: ${count}, Percentage: ${percentage.toFixed(1)}%`);
+      const roundedPercentage = Math.round(percentage * 10) / 10;
       
-      if (percentage >= 5.0) {
+      console.log(`🏙️  ${city}: ${count} records = ${roundedPercentage}%`);
+      
+      if (roundedPercentage >= threshold) {
+        console.log(`✅ ${city} ABOVE threshold - adding individually`);
         processedData.push({
           name: city,
           count: count,
-          percentage: percentage.toFixed(1)
+          percentage: roundedPercentage.toFixed(1)
         });
       } else {
+        console.log(`📦 ${city} BELOW threshold - adding to Others`);
         otherCount += count;
-        otherCities.push(`${city} (${percentage.toFixed(1)}%)`);
+        otherCities.push(`${city} (${roundedPercentage.toFixed(1)}%)`);
       }
     });
     
     // Add "Others" category if there are cities with less than 5%
     if (otherCount > 0) {
-      console.log(`Grouping ${otherCities.length} cities into Others:`, otherCities);
+      const otherPercentage = (otherCount / totalChildren) * 100;
+      console.log(`📦 OTHERS GROUP: ${otherCities.length} cities, ${otherCount} total records = ${otherPercentage.toFixed(1)}%`);
+      console.log('📝 Cities in Others:', otherCities);
+      
       processedData.push({
         name: "Others",
         count: otherCount,
-        percentage: ((otherCount / totalChildren) * 100).toFixed(1)
+        percentage: otherPercentage.toFixed(1)
       });
+    } else {
+      console.log('ℹ️  No cities below threshold - no Others group needed');
     }
     
-    console.log('Final processed data:', processedData);
+    console.log('🎉 FINAL PROCESSED DATA:', processedData);
+    console.log('🔍 PROCESSING CITY DATA - END');
     return processedData;
   };
 
