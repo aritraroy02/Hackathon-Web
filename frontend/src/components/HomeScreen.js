@@ -13,6 +13,7 @@ import {
   Help as HelpIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppContext } from '../contexts/AppContext';
 import { getAllRecords } from '../utils/database';
@@ -20,15 +21,16 @@ import './HomeScreen.css';
 
 const HomeScreen = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const { state } = useAppContext();
   const [records, setRecords] = useState([]);
 
   const getWelcomeMessage = () => {
     if (isAuthenticated && user) {
-      return `Welcome, ${user.firstName || user.name || 'User'}!`;
+      return t('common.welcome_user', { name: user.firstName || user.name || 'User' });
     }
-    return 'Welcome to Child Health Records!';
+    return t('common.welcome_message');
   };
 
   const loadRecords = useCallback(async () => {
@@ -106,8 +108,8 @@ const HomeScreen = () => {
               </Typography>
               <Typography variant="body1" className="welcome-subtitle">
                 {isAuthenticated 
-                  ? `Health Worker • ${user.designation || 'Health Worker'}`
-                  : 'Manage child health records efficiently'
+                  ? `${t('navigation.profile')} • ${user.designation || t('navigation.profile')}`
+                  : t('app.subtitle')
                 }
               </Typography>
               
@@ -130,41 +132,41 @@ const HomeScreen = () => {
       <div className="stats-grid">
         <div className="stat-card total">
           <div className="stat-number">{stats.total}</div>
-          <div className="stat-label">Total Records</div>
+          <div className="stat-label">{t('home.total_records')}</div>
         </div>
         <div className="stat-card synced">
           <div className="stat-number">{stats.synced}</div>
-          <div className="stat-label">Synced</div>
+          <div className="stat-label">{t('sync.sync_complete')}</div>
         </div>
         <div className="stat-card pending">
           <div className="stat-number">{stats.pending}</div>
-          <div className="stat-label">Pending Sync</div>
+          <div className="stat-label">{t('home.pending_sync')}</div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="actions-grid">
         <QuickActionCard
-          title="Add Record"
-          description="Create a new child health record"
+          title={t('child.add_new')}
+          description={t('child.child_information')}
           icon={<AddIcon />}
           onClick={() => navigate('/form')}
         />
         <QuickActionCard
-          title="View Records"
-          description={`Browse ${getQuickStats().total} health records`}
+          title={t('records.title')}
+          description={t('records.all_records')}
           icon={<ListIcon />}
           onClick={() => navigate('/records')}
         />
         <QuickActionCard
-          title="Settings"
-          description="Configure app preferences"
+          title={t('settings.title')}
+          description={t('settings.general')}
           icon={<SettingsIcon />}
           onClick={() => navigate('/settings')}
         />
         <QuickActionCard
-          title="Help"
-          description="Get support and guidance"
+          title={t('help.title')}
+          description={t('help.user_guide')}
           icon={<HelpIcon />}
           onClick={() => navigate('/help')}
         />

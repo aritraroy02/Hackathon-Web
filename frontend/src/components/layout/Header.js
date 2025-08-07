@@ -14,13 +14,16 @@ import {
   Notifications as NotificationsIcon,
   Person as PersonIcon
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { checkInternetConnectivity } from '../../utils/networkUtils';
 import LoginModal from '../auth/LoginModal';
 import ProfileModal from '../auth/ProfileModal';
+import LanguageSelector from '../common/LanguageSelector';
 
 const Header = () => {
+  const { t } = useTranslation();
   const { state, showNotification } = useAppContext();
   const { isAuthenticated, user } = useAuth();
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -64,10 +67,13 @@ const Header = () => {
           component="h1" 
           sx={{ flexGrow: 1, fontWeight: 600 }}
         >
-          Child Health PWA
+          {t('app.title')}
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Language Selector */}
+          <LanguageSelector variant="compact" showIcon={false} showLabel={false} />
+          
           {/* User Profile */}
           {isAuthenticated && user ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

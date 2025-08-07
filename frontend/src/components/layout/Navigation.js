@@ -13,9 +13,11 @@ import {
   Settings as SettingsIcon,
   Help as HelpIcon
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../../contexts/AppContext';
 
 const Navigation = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { state } = useAppContext();
@@ -58,19 +60,19 @@ const Navigation = () => {
         }}
       >
         <BottomNavigationAction
-          label="Home"
+          label={t('navigation.home')}
           icon={<HomeIcon />}
-          title="Home Screen"
+          title={t('navigation.home')}
         />
         
         <BottomNavigationAction
-          label="Form"
+          label={t('navigation.add_child')}
           icon={<AddIcon />}
-          title="New Child Record"
+          title={t('child.add_new')}
         />
         
         <BottomNavigationAction
-          label="Records"
+          label={t('navigation.records')}
           icon={
             <Badge 
               badgeContent={state.savedRecords.length > 0 ? state.savedRecords.length : null}
@@ -80,19 +82,19 @@ const Navigation = () => {
               <ListIcon />
             </Badge>
           }
-          title="View Records"
+          title={t('records.title')}
         />
         
         <BottomNavigationAction
-          label="Settings"
+          label={t('navigation.settings')}
           icon={<SettingsIcon />}
-          title="App Settings"
+          title={t('settings.title')}
         />
         
         <BottomNavigationAction
-          label="Help"
+          label={t('navigation.help')}
           icon={<HelpIcon />}
-          title="Help & Support"
+          title={t('help.title')}
         />
       </BottomNavigation>
     </Paper>

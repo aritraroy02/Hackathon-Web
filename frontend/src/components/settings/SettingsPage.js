@@ -30,16 +30,35 @@ import {
   Sync as SyncIcon,
   Delete as DeleteIcon,
   Info as InfoIcon,
-  Warning as WarningIcon
+  Warning as WarningIcon,
+  Check as CheckIcon
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveSettings, getSettings, clearAllData, getDatabaseStats } from '../../utils/database';
 import { getCacheStorageUsage, clearAllCaches } from '../../utils/serviceWorker';
+import LanguageSelector from '../common/LanguageSelector';
+
+const languages = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' }
+];
 
 const SettingsPage = () => {
+  const { t, i18n } = useTranslation();
   const { state, updateSettings, showNotification } = useAppContext();
   const { logout } = useAuth();
+  
+  // Language change handler
+  const handleLanguageChange = (event) => {
+    const newLanguage = event.target.value;
+    i18n.changeLanguage(newLanguage);
+    showNotification(t('notifications.language_changed'), 'success');
+  };
   
   const [localSettings, setLocalSettings] = useState(state.settings);
   const [storageInfo, setStorageInfo] = useState(null);
@@ -148,7 +167,7 @@ const SettingsPage = () => {
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <SyncIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Sync Settings
+            {t('settings.sync')}
           </Typography>
           
           <List>
@@ -194,26 +213,63 @@ const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Photo Settings */}
+      {/* General Settings */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <CameraIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Photo Settings
+            {t('settings.general')}
           </Typography>
           
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Photo Quality</InputLabel>
-            <Select
-              value={localSettings.photoQuality}
-              onChange={(e) => handleSettingChange('photoQuality', e.target.value)}
-              label="Photo Quality"
-            >
-              <MenuItem value="low">Low (faster uploads)</MenuItem>
-              <MenuItem value="medium">Medium (balanced)</MenuItem>
-              <MenuItem value="high">High (best quality)</MenuItem>
-            </Select>
-          </FormControl>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>{t('settings.language')}</InputLabel>
+                <Select
+                  value={i18n.language}
+                  onChange={handleLanguageChange}
+                  label={t('settings.language')}
+                  renderValue={(selected) => {
+                    const selectedLang = languages.find(lang => lang.code === selected);
+                    if (!selectedLang) return '';
+                    return (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>{selectedLang.flag}</span>
+                        <Typography variant="body1">{selectedLang.name}</Typography>
+                      </Box>
+                    );
+                  }}
+                >
+                  {languages.map((language) => (
+                    <MenuItem key={language.code} value={language.code}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                        <span>{language.flag}</span>
+                        <Typography variant="body2" sx={{ flexGrow: 1 }}>{language.name}</Typography>
+                        {i18n.language === language.code && (
+                          <CheckIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Photo Quality</InputLabel>
+                <Select
+                  value={localSettings.photoQuality}
+                  onChange={(e) => handleSettingChange('photoQuality', e.target.value)}
+                  label="Photo Quality"
+                >
+                  <MenuItem value="low">Low (faster uploads)</MenuItem>
+                  <MenuItem value="medium">Medium (balanced)</MenuItem>
+                  <MenuItem value="high">High (best quality)</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
           
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Higher quality photos take more storage space and longer to sync
@@ -221,47 +277,26 @@ const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Appearance Settings */}
+      {/* Theme Settings */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <ThemeIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Appearance
+            {t('settings.theme')}
           </Typography>
           
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Language</InputLabel>
-                <Select
-                  value={localSettings.language}
-                  onChange={(e) => handleSettingChange('language', e.target.value)}
-                  label="Language"
-                >
-                  <MenuItem value="en">English</MenuItem>
-                  <MenuItem value="fr">Français</MenuItem>
-                  <MenuItem value="es">Español</MenuItem>
-                  <MenuItem value="ar">العربية</MenuItem>
-                  <MenuItem value="zh">中文</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Theme</InputLabel>
-                <Select
-                  value={localSettings.theme}
-                  onChange={(e) => handleSettingChange('theme', e.target.value)}
-                  label="Theme"
-                >
-                  <MenuItem value="light">Light</MenuItem>
-                  <MenuItem value="dark">Dark</MenuItem>
-                  <MenuItem value="auto">Auto (System)</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+          <FormControl fullWidth sx={{ maxWidth: 300 }}>
+            <InputLabel>{t('settings.theme')}</InputLabel>
+            <Select
+              value={localSettings.theme}
+              onChange={(e) => handleSettingChange('theme', e.target.value)}
+              label={t('settings.theme')}
+            >
+              <MenuItem value="light">{t('settings.theme_light')}</MenuItem>
+              <MenuItem value="dark">{t('settings.theme_dark')}</MenuItem>
+              <MenuItem value="auto">{t('settings.theme_auto')}</MenuItem>
+            </Select>
+          </FormControl>
         </CardContent>
       </Card>
 

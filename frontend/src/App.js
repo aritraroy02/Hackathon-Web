@@ -13,6 +13,7 @@ import InstallPrompt from './components/common/InstallPrompt';
 import { useAppContext } from './contexts/AppContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { initializeDatabase } from './utils/database';
+import './i18n'; // Initialize i18n
 
 function AppContent() {
   const { 
