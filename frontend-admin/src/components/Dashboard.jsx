@@ -45,9 +45,20 @@ function Dashboard() {
 
     // Malnutrition symptoms distribution
     const malnutritionStats = children.reduce((acc, child) => {
-      if (child.malnutritionSigns && Array.isArray(child.malnutritionSigns) && child.malnutritionSigns.length > 0) {
-        child.malnutritionSigns.forEach(sign => {
-          acc[sign] = (acc[sign] || 0) + 1;
+      let signs = child.malnutritionSigns;
+
+      // If it's a string, split by comma and clean up
+      if (typeof signs === 'string') {
+        signs = signs.trim() ? signs.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+      }
+
+      // Ensure it's an array and has valid content
+      if (Array.isArray(signs) && signs.length > 0) {
+        signs.forEach(sign => {
+          if (sign && sign.trim()) {
+            const cleanSign = sign.trim();
+            acc[cleanSign] = (acc[cleanSign] || 0) + 1;
+          }
         });
       } else {
         acc['No Symptoms'] = (acc['No Symptoms'] || 0) + 1;
@@ -79,12 +90,25 @@ function Dashboard() {
     const offlineSubmissions = children.filter(child => child.isOffline).length;
 
     // Critical cases (children with multiple malnutrition signs)
-    const criticalCases = children.filter(child => 
-      child.malnutritionSigns && 
-      Array.isArray(child.malnutritionSigns) && 
-      child.malnutritionSigns.length > 2 &&
-      !child.malnutritionSigns.includes('N/A - No visible signs')
-    ).length;
+    const criticalCases = children.filter(child => {
+      let signs = child.malnutritionSigns;
+      
+      // Handle both array and string formats
+      if (typeof signs === 'string') {
+        signs = signs.trim() ? signs.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+      }
+      
+      // Filter out common non-symptom values
+      const validSigns = Array.isArray(signs) 
+        ? signs.filter(sign => 
+            sign && 
+            sign.trim() &&
+            !['N/A - No visible signs', 'No visible signs', 'None', 'N/A'].includes(sign.trim())
+          )
+        : [];
+      
+      return validSigns.length > 2;
+    }).length;
 
     // Age distribution
     const ageGroups = children.reduce((acc, child) => {

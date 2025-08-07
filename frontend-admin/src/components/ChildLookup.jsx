@@ -240,10 +240,15 @@ const ChildLookup = () => {
             <div class="section-title">🏥 Health Information</div>
             <div class="info-row">
               <span class="label">Malnutrition Signs:</span>
-              <span class="value">${childData.malnutritionSigns && Array.isArray(childData.malnutritionSigns) && childData.malnutritionSigns.length > 0
-                ? childData.malnutritionSigns.join(', ')
-                : 'N/A'
-              }</span>
+              <span class="value">${(() => {
+                let signs = childData.malnutritionSigns;
+                if (typeof signs === 'string') {
+                  signs = signs.trim() ? signs.split(',').map(s => s.trim()) : [];
+                }
+                return Array.isArray(signs) && signs.length > 0 && signs[0] !== ''
+                  ? signs.join(', ')
+                  : 'N/A';
+              })()}</span>
             </div>
             <div class="info-row">
               <span class="label">Recent Illnesses:</span>
@@ -526,10 +531,15 @@ const ChildLookup = () => {
                   <div className="detail-row">
                     <span className="detail-label">Malnutrition Signs:</span>
                     <span className="detail-value">
-                      {childData.malnutritionSigns && Array.isArray(childData.malnutritionSigns) && childData.malnutritionSigns.length > 0
-                        ? childData.malnutritionSigns.join(', ')
-                        : 'N/A'
-                      }
+                      {(() => {
+                        let signs = childData.malnutritionSigns;
+                        if (typeof signs === 'string') {
+                          signs = signs.trim() ? signs.split(',').map(s => s.trim()) : [];
+                        }
+                        return Array.isArray(signs) && signs.length > 0 && signs[0] !== ''
+                          ? signs.join(', ')
+                          : 'N/A';
+                      })()}
                     </span>
                   </div>
                   <div className="detail-row">

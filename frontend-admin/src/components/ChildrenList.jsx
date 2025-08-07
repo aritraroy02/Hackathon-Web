@@ -427,7 +427,17 @@ const ChildrenList = () => {
                   <h3><Calendar size={20} /> Health Conditions</h3>
                   <div className="detail-row">
                     <span className="detail-label">Malnutrition Signs:</span>
-                    <span className="detail-value">{selectedChild.malnutritionSigns || 'None reported'}</span>
+                    <span className="detail-value">
+                      {(() => {
+                        let signs = selectedChild.malnutritionSigns;
+                        if (typeof signs === 'string') {
+                          signs = signs.trim() ? signs.split(',').map(s => s.trim()) : [];
+                        }
+                        return Array.isArray(signs) && signs.length > 0 && signs[0] !== ''
+                          ? signs.join(', ')
+                          : 'None reported';
+                      })()}
+                    </span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Recent Illnesses:</span>
