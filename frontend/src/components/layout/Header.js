@@ -78,20 +78,21 @@ const Header = () => {
                   </Avatar>
                 }
                 label={`Welcome, ${user.name?.split(' ')[0] || 'User'}`}
-                variant="outlined"
+                variant="filled"
                 size="small"
                 onClick={handleProfileClick}
                 sx={{ 
                   cursor: 'pointer',
-                  color: 'white',
-                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  color: '#1976d2',
+                  fontWeight: 600,
                   '& .MuiChip-avatar': {
                     color: 'white',
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
+                    backgroundColor: '#1976d2'
                   },
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    borderColor: 'rgba(255, 255, 255, 0.7)'
+                    backgroundColor: 'white',
+                    color: '#1565c0'
                   }
                 }}
               />

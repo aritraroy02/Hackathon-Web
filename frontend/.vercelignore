@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Development files
+*.log
+.DS_Store
+Thumbs.db
+
+# Debug and test files
+browser-debug.js
+browser-test.js
+debug-*.html
+debug-*.js
+*-test.js
+*-debug.js
+test-*.js
+test-*.html
+upload-test.html
+upload-debug-console.js
+diagnostic.html
+google-cloud-test.html
+simple-upload-test.js
+
+# Documentation (optional - remove if you want to include)
+*.md
+LICENSE
+
+# Deployment scripts
+deploy-to-cloud.bat
+cloudbuild.yaml
+render.yaml
+scripts.json
+
+# Local environment files (they will be set in Vercel dashboard)
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Note: .env is NOT ignored as it contains production environment variables

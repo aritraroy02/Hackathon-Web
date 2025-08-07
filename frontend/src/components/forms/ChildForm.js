@@ -421,6 +421,14 @@ const ChildForm = () => {
         return (
           <Grid container spacing={3}>
             <Grid item xs={12}>
+              <PhotoCapture
+                photo={state.currentForm.photo}
+                onPhotoCapture={(photo) => updateFormField('photo', photo)}
+                onPhotoClear={() => updateFormField('photo', null)}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Child's Name"
@@ -451,7 +459,7 @@ const ChildForm = () => {
                  }}
                  sx={{
                    '& .MuiInputLabel-root': {
-                     backgroundColor: 'white',
+                     backgroundColor: 'background.paper',
                      padding: '0 4px'
                    }
                  }}
@@ -504,14 +512,6 @@ const ChildForm = () => {
               </Box>
             </Grid>
             */}
-            
-            <Grid item xs={12}>
-              <PhotoCapture
-                photo={state.currentForm.photo}
-                onPhotoCapture={(photo) => updateFormField('photo', photo)}
-                onPhotoClear={() => updateFormField('photo', null)}
-              />
-            </Grid>
           </Grid>
         );
 
