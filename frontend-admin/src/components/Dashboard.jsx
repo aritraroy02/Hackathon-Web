@@ -161,10 +161,40 @@ function Dashboard() {
     count: value
   }));
 
-  const cityBarData = Object.entries(data?.cityDistribution || {})
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, 10)
-    .map(([key, value]) => ({ name: key, count: value }));
+  // Process city data to show top cities and group small ones as "Others"
+  const processCityData = (cityDist, totalChildren) => {
+    const cityEntries = Object.entries(cityDist || {})
+      .sort(([,a], [,b]) => b - a);
+    
+    const processedData = [];
+    let otherCount = 0;
+    
+    cityEntries.forEach(([city, count]) => {
+      const percentage = (count / totalChildren) * 100;
+      if (percentage >= 5) {
+        processedData.push({
+          name: city,
+          count: count,
+          percentage: percentage.toFixed(1)
+        });
+      } else {
+        otherCount += count;
+      }
+    });
+    
+    // Add "Others" category if there are cities with less than 5%
+    if (otherCount > 0) {
+      processedData.push({
+        name: "Others",
+        count: otherCount,
+        percentage: ((otherCount / totalChildren) * 100).toFixed(1)
+      });
+    }
+    
+    return processedData;
+  };
+
+  const cityBarData = processCityData(data?.cityDistribution, data?.totalChildren);
 
   const stateBarData = Object.entries(data?.stateDistribution || {})
     .sort(([,a], [,b]) => b - a)
@@ -376,7 +406,7 @@ function Dashboard() {
               <MapPin size={20} />
               Top Cities by Records
             </h3>
-            <p className="chart-subtitle">Cities with most health records</p>
+            <p className="chart-subtitle">Top cities (≥5%) + Others grouped</p>
           </div>
           <ResponsiveContainer width="100%" height={350}>
             <PieChart>
