@@ -44,16 +44,32 @@ function Dashboard() {
     }, {});
 
     // Malnutrition symptoms distribution
+    console.log('Starting malnutrition stats calculation for', children.length, 'children');
     const malnutritionStats = children.reduce((acc, child) => {
       let signs = child.malnutritionSigns;
+      
+      // Debug first few children to see data format
+      if (Object.keys(acc).length < 5) {
+        console.log(`Child ${child.childName}:`, {
+          originalSigns: signs,
+          type: typeof signs,
+          isArray: Array.isArray(signs)
+        });
+      }
 
       // If it's a string, split by comma and clean up
       if (typeof signs === 'string') {
         signs = signs.trim() ? signs.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+        if (Object.keys(acc).length < 5) {
+          console.log('After string processing:', signs);
+        }
       }
 
       // Ensure it's an array and has valid content
       if (Array.isArray(signs) && signs.length > 0) {
+        if (Object.keys(acc).length < 5) {
+          console.log('Processing valid signs:', signs);
+        }
         signs.forEach(sign => {
           if (sign && sign.trim()) {
             const cleanSign = sign.trim();
@@ -61,10 +77,15 @@ function Dashboard() {
           }
         });
       } else {
+        if (Object.keys(acc).length < 5) {
+          console.log('Adding to No Symptoms for:', child.childName);
+        }
         acc['No Symptoms'] = (acc['No Symptoms'] || 0) + 1;
       }
       return acc;
     }, {});
+    
+    console.log('Final malnutrition statistics:', malnutritionStats);
 
     // Location distribution
     const cityDist = children.reduce((acc, child) => {
