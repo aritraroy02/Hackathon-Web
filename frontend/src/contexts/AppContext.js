@@ -423,7 +423,7 @@ export const AppProvider = ({ children }) => {
       console.error('Error loading user records:', error);
       showNotification('Failed to load your records from server', 'error');
     }
-  }, [setMongoRecords, showNotification]);
+  }, [setMongoRecords, showNotification, state.mongoRecordsLoaded]);
 
   // Auto-sync function
   const triggerAutoSync = useCallback(async (user) => {

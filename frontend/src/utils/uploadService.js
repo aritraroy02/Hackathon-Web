@@ -294,7 +294,7 @@ export const getUploadStats = async (userUIN) => {
  */
 export const fetchUserRecords = async (user, page = 1, limit = 50) => {
   try {
-    if (!user || !user.uin && !user.uinNumber) {
+    if (!user || (!user.uin && !user.uinNumber)) {
       throw new Error('User UIN is required to fetch records');
     }
 
@@ -342,7 +342,7 @@ export const autoSyncOfflineRecords = async (user, onProgress = null) => {
     }
 
     // Import database functions dynamically to avoid circular dependency
-    const { getAllRecords, markRecordSynced, getUnsyncedRecords } = await import('./database');
+    const { markRecordSynced, getUnsyncedRecords } = await import('./database');
     
     // Get unsynced records only
     const unsyncedRecords = await getUnsyncedRecords();

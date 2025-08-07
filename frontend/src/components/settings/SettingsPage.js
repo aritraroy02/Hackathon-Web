@@ -38,7 +38,6 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveSettings, getSettings, clearAllData, getDatabaseStats } from '../../utils/database';
 import { getCacheStorageUsage, clearAllCaches } from '../../utils/serviceWorker';
-import LanguageSelector from '../common/LanguageSelector';
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇺🇸' },

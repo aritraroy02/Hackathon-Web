@@ -17,6 +17,7 @@ import {
   Grid,
   Divider
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import {
   ExpandMore as ExpandIcon,
   Help as HelpIcon,
@@ -35,6 +36,7 @@ import {
 } from '@mui/icons-material';
 
 const HelpPage = () => {
+  const { t } = useTranslation();
   const [expandedPanel, setExpandedPanel] = useState('getting-started');
 
   const handleAccordionChange = (panel) => (event, isExpanded) => {
@@ -44,126 +46,126 @@ const HelpPage = () => {
   const faqData = [
     {
       id: 'getting-started',
-      title: 'Getting Started',
+      title: t('help.getting_started'),
       icon: <GuideIcon />,
       content: [
         {
-          question: 'How do I register a new child?',
-          answer: 'Navigate to the Form tab, fill in all required information including child\'s name, age, weight, height, and guardian details. Don\'t forget to provide parental consent before submitting.'
+          question: t('help.how_register_child'),
+          answer: t('help.register_child_answer')
         },
         {
-          question: 'What is a Health ID?',
-          answer: 'A Health ID is a unique identifier generated for each child. It helps track health records over time and can be auto-generated or manually entered.'
+          question: t('help.what_health_id'),
+          answer: t('help.health_id_answer')
         },
         {
-          question: 'Do I need internet to use the app?',
-          answer: 'No! The app works completely offline. Data is stored locally and synced when internet becomes available.'
+          question: t('help.need_internet'),
+          answer: t('help.internet_answer')
         }
       ]
     },
     {
       id: 'authentication',
-      title: 'Authentication & Security',
+      title: t('help.authentication_security'),
       icon: <SecurityIcon />,
       content: [
         {
-          question: 'How does authentication work?',
-          answer: 'Use your assigned username and password to login. Demo accounts are available: admin/password123, user/user123, demo/demo123.'
+          question: t('help.how_authentication_works'),
+          answer: t('help.authentication_answer')
         },
         {
-          question: 'Is my data secure?',
-          answer: 'Yes! All sensitive data is encrypted before storage. Data only leaves your device when you explicitly sync it to the server.'
+          question: t('help.is_data_secure'),
+          answer: t('help.data_secure_answer')
         },
         {
-          question: 'What if I forget my login credentials?',
-          answer: 'For this demo application, use any of the provided demo accounts: admin/password123, user/user123, or demo/demo123.'
+          question: t('help.forgot_credentials'),
+          answer: t('help.forgot_credentials_answer')
         }
       ]
     },
     {
       id: 'offline-usage',
-      title: 'Offline Usage',
+      title: t('help.offline_usage'),
       icon: <StorageIcon />,
       content: [
         {
-          question: 'How does offline mode work?',
-          answer: 'The app automatically saves all data locally when offline. When internet returns, you can sync all pending records to the server.'
+          question: t('help.how_offline_works'),
+          answer: t('help.offline_works_answer')
         },
         {
-          question: 'How much data can I store offline?',
-          answer: 'The app can store thousands of records offline, depending on your device\'s storage capacity. Check Settings > Storage for current usage.'
+          question: t('help.how_much_storage'),
+          answer: t('help.storage_capacity_answer')
         },
         {
-          question: 'What happens if I clear my browser data?',
-          answer: 'All offline data will be lost. Make sure to sync your data regularly when online to prevent data loss.'
+          question: t('help.clear_browser_data'),
+          answer: t('help.clear_data_answer')
         }
       ]
     },
     {
       id: 'sync-data',
-      title: 'Data Synchronization',
+      title: t('help.data_synchronization'),
       icon: <SyncIcon />,
       content: [
         {
-          question: 'How do I sync my data?',
-          answer: 'Go to the Sync tab and tap "Sync All Records". You can also sync individual records. Syncing requires an internet connection.'
+          question: t('help.how_sync_data'),
+          answer: t('help.sync_data_answer')
         },
         {
-          question: 'What if sync fails?',
-          answer: 'Failed records remain in the queue and can be retried. Check your internet connection and try again. Contact support if problems persist.'
+          question: t('help.sync_fails'),
+          answer: t('help.sync_fails_answer')
         },
         {
-          question: 'How often should I sync?',
-          answer: 'Sync regularly, preferably daily or whenever you have stable internet connection. This ensures data backup and reduces storage usage.'
+          question: t('help.how_often_sync'),
+          answer: t('help.sync_frequency_answer')
         }
       ]
     },
     {
       id: 'photos',
-      title: 'Photo Management',
+      title: t('help.photo_management'),
       icon: <CameraIcon />,
       content: [
         {
-          question: 'Why can\'t I access the camera?',
-          answer: 'Ensure you\'ve granted camera permissions to the app. You can also upload photos from your gallery if camera access isn\'t available.'
+          question: t('help.camera_access_issue'),
+          answer: t('help.camera_access_answer')
         },
         {
-          question: 'Are photos stored securely?',
-          answer: 'Yes, photos are compressed and encrypted before storage. They\'re only uploaded when you sync the record.'
+          question: t('help.photos_secure'),
+          answer: t('help.photos_secure_answer')
         },
         {
-          question: 'Can I take photos without internet?',
-          answer: 'Absolutely! All photos are stored locally and will be synced when internet becomes available.'
+          question: t('help.photos_without_internet'),
+          answer: t('help.photos_offline_answer')
         }
       ]
     },
     {
       id: 'troubleshooting',
-      title: 'Troubleshooting',
+      title: t('help.troubleshooting'),
       icon: <HelpIcon />,
       content: [
         {
-          question: 'The app is slow or not responding',
-          answer: 'Try refreshing the page or clearing the app cache in Settings. If problems persist, check your device\'s available storage.'
+          question: t('help.app_slow'),
+          answer: t('help.app_slow_answer')
         },
         {
-          question: 'I lost some data',
-          answer: 'Check if the data was synced by going to the Records tab. Unsynced data might be in the Sync tab queue. Contact support for data recovery assistance.'
+          question: t('help.lost_data'),
+          answer: t('help.lost_data_answer')
         },
         {
-          question: 'How do I report a bug?',
-          answer: 'Use the support contact information below to report bugs. Include details about what you were doing when the issue occurred.'
+          question: t('help.report_bug'),
+          answer: t('help.report_bug_answer')
         }
       ]
     }
   ];
 
   const quickTips = [
-    'Use auto-save to prevent data loss while filling forms',
-    'Take clear, well-lit photos for better record quality',
-    'Sync regularly to keep your data backed up',
-    'Check the storage usage in Settings to manage space',
-    'Enable notifications to know when sync is complete'
+    t('help.tip_auto_save'),
+    t('help.tip_clear_photos'),
+    t('help.tip_sync_regularly'),
+    t('help.tip_check_storage'),
+    t('help.tip_enable_notifications')
   ];
 
   const supportInfo = {
@@ -179,10 +181,10 @@ const HelpPage = () => {
         <CardContent>
           <Typography variant="h5" gutterBottom>
             <HelpIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Help & Support
+            {t('help.title')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Find answers to common questions and get help using the Child Health PWA
+            {t('help.subtitle')}
           </Typography>
         </CardContent>
       </Card>
@@ -191,7 +193,7 @@ const HelpPage = () => {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Quick Tips
+            {t('help.quick_tips')}
           </Typography>
           <List dense>
             {quickTips.map((tip, index) => (
@@ -211,7 +213,7 @@ const HelpPage = () => {
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <FAQIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Frequently Asked Questions
+            {t('help.faq')}
           </Typography>
           
           {faqData.map((section) => (
@@ -251,7 +253,7 @@ const HelpPage = () => {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Feature Overview
+            {t('help.feature_overview')}
           </Typography>
           
           <Grid container spacing={2}>
@@ -272,10 +274,10 @@ const HelpPage = () => {
               >
                 <Typography variant="subtitle1" gutterBottom>
                   <CameraIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'primary.main' }} />
-                  Photo Capture
+                  {t('help.photo_capture')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Take photos using camera or upload from gallery. Photos are automatically compressed and secured.
+                  {t('help.photo_capture_desc')}
                 </Typography>
               </Box>
             </Grid>
@@ -297,10 +299,10 @@ const HelpPage = () => {
               >
                 <Typography variant="subtitle1" gutterBottom>
                   <StorageIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'secondary.main' }} />
-                  Offline Storage
+                  {t('help.offline_storage')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  All data is stored locally and encrypted. Works completely offline with automatic sync when online.
+                  {t('help.offline_storage_desc')}
                 </Typography>
               </Box>
             </Grid>
@@ -322,10 +324,10 @@ const HelpPage = () => {
               >
                 <Typography variant="subtitle1" gutterBottom>
                   <SyncIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'info.main' }} />
-                  Smart Sync
+                  {t('help.smart_sync')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Intelligent synchronization with retry logic and progress tracking. Sync individual records or all at once.
+                  {t('help.smart_sync_desc')}
                 </Typography>
               </Box>
             </Grid>
@@ -347,10 +349,10 @@ const HelpPage = () => {
               >
                 <Typography variant="subtitle1" gutterBottom>
                   <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'success.main' }} />
-                  Security
+                  {t('help.security')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Simple authentication, data encryption, and local storage ensure your data is always protected.
+                  {t('help.security_desc')}
                 </Typography>
               </Box>
             </Grid>
@@ -363,37 +365,29 @@ const HelpPage = () => {
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <DownloadIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Install as App
+            {t('help.install_app')}
           </Typography>
           
           <Alert severity="info" sx={{ mb: 2 }}>
-            Install this PWA on your device for the best experience!
+            {t('help.install_pwa_info')}
           </Alert>
           
           <Typography variant="subtitle2" gutterBottom>
-            Android/Chrome:
+            {t('help.android_chrome')}
           </Typography>
           <Typography variant="body2" paragraph>
-            1. Tap the menu (three dots) in your browser
-            <br />
-            2. Select "Add to Home Screen" or "Install App"
-            <br />
-            3. Follow the prompts to install
+            {t('help.android_instructions')}
           </Typography>
           
           <Typography variant="subtitle2" gutterBottom>
-            iOS/Safari:
+            {t('help.ios_safari')}
           </Typography>
           <Typography variant="body2" paragraph>
-            1. Tap the Share button (square with arrow)
-            <br />
-            2. Scroll down and tap "Add to Home Screen"
-            <br />
-            3. Tap "Add" to install
+            {t('help.ios_instructions')}
           </Typography>
           
           <Chip
-            label="PWA Compatible"
+            label={t('help.pwa_compatible')}
             color="success"
             variant="outlined"
             size="small"
@@ -406,19 +400,19 @@ const HelpPage = () => {
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <LanguageIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Language Support
+            {t('help.language_support')}
           </Typography>
           
           <Typography variant="body2" paragraph>
-            The app supports multiple languages. Change language in Settings- Appearance.
+            {t('help.language_change_info')}
           </Typography>
           
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip label="English" size="small" />
             <Chip label="हिंदी (Hindi)" size="small" />
-            <Chip label="বাংলা (Bengali)" size="small" />
-            <Chip label="తెలుగు (Telugu)" size="small" />
-            <Chip label="தமிழ் (Tamil)" size="small" />
+            <Chip label="Español (Spanish)" size="small" />
+            <Chip label="Français (French)" size="small" />
+            <Chip label="中文 (Chinese)" size="small" />
           </Box>
         </CardContent>
       </Card>
@@ -428,11 +422,11 @@ const HelpPage = () => {
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <SupportIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Contact Support
+            {t('help.contact')}
           </Typography>
           
           <Typography variant="body2" paragraph>
-            Need more help? Our support team is here to assist you.
+            {t('help.contact_support_info')}
           </Typography>
           
           <Grid container spacing={2}>
@@ -450,7 +444,7 @@ const HelpPage = () => {
             
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">
-                Support Hours:
+                {t('help.support_hours')}
                 <br />
                 {supportInfo.hours}
               </Typography>
@@ -459,10 +453,10 @@ const HelpPage = () => {
           
           <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
             <Button variant="contained" href={`tel:${supportInfo.phone}`}>
-              Call Support
+              {t('help.call_support')}
             </Button>
             <Button variant="outlined" href={`mailto:${supportInfo.email}`}>
-              Email Support
+              {t('help.email_support')}
             </Button>
           </Box>
         </CardContent>

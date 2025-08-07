@@ -32,11 +32,8 @@ const LanguageSelector = ({ variant = 'standard', showIcon = true, showLabel = t
     i18n.changeLanguage(newLanguage);
     
     // Show notification about language change
-    const languageName = languages.find(lang => lang.code === newLanguage)?.name || newLanguage;
     showNotification(t('notifications.language_changed'), 'success');
   };
-
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
   if (variant === 'compact') {
     return (

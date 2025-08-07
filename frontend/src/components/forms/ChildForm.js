@@ -24,6 +24,16 @@ import {
   FormHelperText,
   Divider
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import 'dayjs/locale/en';
+import 'dayjs/locale/hi'; 
+import 'dayjs/locale/es';
+import 'dayjs/locale/fr';
+import 'dayjs/locale/zh';
+import { useTranslation } from 'react-i18next';
 
 
 import {
@@ -40,30 +50,47 @@ import PhotoCapture from './PhotoCapture';
 import FormValidation from './FormValidation';
 
 
-
-const malnutritionOptions = [
-  'Stunting (low height for age)',
-  'Wasting (low weight for height)',
-  'Underweight (low weight for age)',
-  'Visible ribs/spine',
-  'Swollen belly',
-  'Pale skin/eyes',
-  'Hair changes (color/texture)',
-  'Delayed development',
-  'Frequent infections',
-  'Loss of appetite',
-  'N/A - No visible signs'
-];
-
-const steps = [
-  'Basic Information',
-  'Physical Measurements',
-  'Health Assessment',
-  'Guardian Information',
-  'Review & Submit'
-];
-
 const ChildForm = () => {
+  const { t, i18n } = useTranslation();
+  
+  // Map i18n language codes to dayjs locale codes
+  const getDateLocale = (lang) => {
+    const localeMap = {
+      'en': 'en',
+      'hi': 'hi',
+      'es': 'es', 
+      'fr': 'fr',
+      'zh': 'zh'
+    };
+    return localeMap[lang] || 'en';
+  };
+
+  // Set dayjs locale based on current language
+  const currentLocale = getDateLocale(i18n.language);
+  dayjs.locale(currentLocale);
+  
+  const malnutritionOptions = [
+    t('child.form.malnutrition.stunting'),
+    t('child.form.malnutrition.wasting'), 
+    t('child.form.malnutrition.underweight'),
+    t('child.form.malnutrition.visible_ribs'),
+    t('child.form.malnutrition.swollen_belly'),
+    t('child.form.malnutrition.pale_skin'),
+    t('child.form.malnutrition.hair_changes'),
+    t('child.form.malnutrition.delayed_development'),
+    t('child.form.malnutrition.frequent_infections'),
+    t('child.form.malnutrition.loss_appetite'),
+    t('child.form.malnutrition.no_visible_signs')
+  ];
+
+  const steps = [
+    t('child.steps.basic_info'),
+    t('child.steps.physical_measurements'),
+    t('child.steps.health_assessment'),
+    t('child.steps.guardian_info'),
+    t('child.steps.review_submit')
+  ];
+
   const { 
     state, 
     updateFormField, 
@@ -162,40 +189,40 @@ const ChildForm = () => {
     switch (step) {
       case 0: // Basic Information
         if (!state.currentForm.childName.trim()) {
-          newErrors.childName = 'Child name is required';
+          newErrors.childName = t('child.form.name_required');
         }
         if (!state.currentForm.dateOfBirth) {
-          newErrors.dateOfBirth = 'Date of birth is required';
+          newErrors.dateOfBirth = t('child.form.date_birth_required');
         } else {
           const birthDate = new Date(state.currentForm.dateOfBirth);
           const today = new Date();
           const minDate = new Date(Date.now() - 18 * 365 * 24 * 60 * 60 * 1000);
           
           if (birthDate > today) {
-            newErrors.dateOfBirth = 'Date of birth cannot be in the future';
+            newErrors.dateOfBirth = t('child.form.date_birth_future');
           } else if (birthDate < minDate) {
-            newErrors.dateOfBirth = 'Child must be 18 years or younger';
+            newErrors.dateOfBirth = t('child.form.date_birth_too_old');
           } else {
             const age = calculateAge(state.currentForm.dateOfBirth);
             if (age < 0 || age > 18) {
-              newErrors.dateOfBirth = 'Child must be between 0 and 18 years old';
+              newErrors.dateOfBirth = t('child.form.age_range_invalid');
             }
           }
         }
         if (!state.currentForm.gender) {
-          newErrors.gender = 'Gender is required';
+          newErrors.gender = t('child.form.gender_required');
         }
         if (!state.currentForm.healthId) {
-          newErrors.healthId = 'Health ID is required';
+          newErrors.healthId = t('child.form.health_id_required');
         }
         break;
 
       case 1: // Physical Measurements
         if (!state.currentForm.weight || isNaN(parseFloat(state.currentForm.weight)) || parseFloat(state.currentForm.weight) <= 0) {
-          newErrors.weight = 'Weight must be a valid positive number';
+          newErrors.weight = t('child.form.weight_invalid');
         }
         if (!state.currentForm.height || isNaN(parseFloat(state.currentForm.height)) || parseFloat(state.currentForm.height) <= 0) {
-          newErrors.height = 'Height must be a valid positive number';
+          newErrors.height = t('child.form.height_invalid');
         }
         break;      case 2: // Health Assessment
         // Optional validation for malnutrition signs
@@ -203,15 +230,15 @@ const ChildForm = () => {
         
       case 3: // Guardian Information
         if (!state.currentForm.guardianName.trim()) {
-          newErrors.guardianName = 'Guardian name is required';
+          newErrors.guardianName = t('child.form.guardian_name_required');
         }
         if (!state.currentForm.phone.trim()) {
-          newErrors.phone = 'Phone number is required';
+          newErrors.phone = t('child.form.phone_required');
         } else if (!/^\d{10}$/.test(state.currentForm.phone.trim())) {
-          newErrors.phone = 'Please enter a valid 10-digit phone number';
+          newErrors.phone = t('child.form.phone_invalid');
         }
         if (!state.currentForm.parentalConsent) {
-          newErrors.parentalConsent = 'Parental consent is required';
+          newErrors.parentalConsent = t('child.form.consent_required');
         }
         break;
         
@@ -431,7 +458,7 @@ const ChildForm = () => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Child's Name"
+                label={t('child.first_name')}
                 value={state.currentForm.childName}
                 onChange={(e) => updateFormField('childName', e.target.value)}
                 error={!!errors.childName}
@@ -443,40 +470,48 @@ const ChildForm = () => {
               />
             </Grid>
             
-                         <Grid item xs={12} sm={6}>
-               <TextField
-                 fullWidth
-                 label="Date of Birth"
-                 type="date"
-                 value={state.currentForm.dateOfBirth || ''}
-                 onChange={(e) => updateFormField('dateOfBirth', e.target.value)}
-                 error={!!errors.dateOfBirth}
-                 helperText={errors.dateOfBirth || (state.currentForm.dateOfBirth ? `Age: ${calculateAge(state.currentForm.dateOfBirth)} years` : 'Select child\'s date of birth')}
-                 required
-                 inputProps={{
-                   max: new Date().toISOString().split('T')[0], // Today's date
-                   min: new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Exactly 18 years ago (accounting for leap years)
-                 }}
-                 sx={{
-                   '& .MuiInputLabel-root': {
-                     backgroundColor: 'background.paper',
-                     padding: '0 4px'
-                   }
-                 }}
-               />
-             </Grid>
+            <Grid item xs={12} sm={6}>
+              <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={currentLocale}>
+                <DatePicker
+                  label={t('child.date_of_birth')}
+                  value={state.currentForm.dateOfBirth ? dayjs(state.currentForm.dateOfBirth) : null}
+                  onChange={(newValue) => {
+                    const dateString = newValue ? newValue.format('YYYY-MM-DD') : '';
+                    updateFormField('dateOfBirth', dateString);
+                  }}
+                  maxDate={dayjs()} // Today's date
+                  minDate={dayjs().subtract(18, 'year')} // 18 years ago
+                  inputFormat="DD/MM/YYYY" // Display format
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      fullWidth
+                      required
+                      error={!!errors.dateOfBirth}
+                      helperText={errors.dateOfBirth || (state.currentForm.dateOfBirth ? `${t('child.age')}: ${calculateAge(state.currentForm.dateOfBirth)} ${t('child.years')}` : t('child.form.select_date_of_birth'))}
+                      sx={{
+                        '& .MuiInputLabel-root': {
+                          backgroundColor: 'background.paper',
+                          padding: '0 4px'
+                        }
+                      }}
+                    />
+                  )}
+                />
+              </LocalizationProvider>
+            </Grid>
             
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required error={!!errors.gender}>
-                <InputLabel>Gender</InputLabel>
+                <InputLabel>{t('child.gender')}</InputLabel>
                 <Select
                   value={state.currentForm.gender}
                   onChange={(e) => updateFormField('gender', e.target.value)}
-                  label="Gender"
+                  label={t('child.gender')}
                 >
-                  <MenuItem value="Male">Male</MenuItem>
-                  <MenuItem value="Female">Female</MenuItem>
-                  <MenuItem value="Other">Other</MenuItem>
+                  <MenuItem value="Male">{t('child.male')}</MenuItem>
+                  <MenuItem value="Female">{t('child.female')}</MenuItem>
+                  <MenuItem value="Other">{t('child.other')}</MenuItem>
                 </Select>
                 {errors.gender && <FormHelperText>{errors.gender}</FormHelperText>}
               </FormControl>
@@ -487,13 +522,13 @@ const ChildForm = () => {
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <TextField
                   fullWidth
-                  label="Health ID"
+                  label={t('child.health_id')}
                   value={state.currentForm.healthId}
                   InputProps={{
                     readOnly: true,
                   }}
                   error={!!errors.healthId}
-                  helperText={errors.healthId || "Auto-generated unique Health ID"}
+                  helperText={errors.healthId || t('child.health_id_helper')}
                   required
                   sx={{
                     '& .MuiInputBase-input': {
@@ -505,7 +540,7 @@ const ChildForm = () => {
                   variant="outlined"
                   onClick={generateUniqueHealthId}
                   sx={{ minWidth: 'auto', px: 2 }}
-                  title="Regenerate Health ID"
+                  title={t('child.regenerate_health_id')}
                 >
                   <RefreshIcon />
                 </Button>
@@ -521,7 +556,7 @@ const ChildForm = () => {
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Weight (kg)"
+                label={t('child.weight') + ' (kg)'}
                 type="number"
                 value={state.currentForm.weight}
                 onChange={(e) => updateFormField('weight', e.target.value)}
@@ -538,7 +573,7 @@ const ChildForm = () => {
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Height (cm)"
+                label={t('child.height') + ' (cm)'}
                 type="number"
                 value={state.currentForm.height}
                 onChange={(e) => updateFormField('height', e.target.value)}
@@ -569,12 +604,12 @@ const ChildForm = () => {
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Visible Signs of Malnutrition</InputLabel>
+                <InputLabel>{t('child.form.malnutrition_signs')}</InputLabel>
                 <Select
                   multiple
                   value={state.currentForm.malnutritionSigns}
                   onChange={(e) => handleMalnutritionChange(e.target.value)}
-                  input={<OutlinedInput label="Visible Signs of Malnutrition" />}
+                  input={<OutlinedInput label={t('child.form.malnutrition_signs')} />}
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => (
@@ -608,8 +643,8 @@ const ChildForm = () => {
                 </Select>
                 <FormHelperText>
                   {state.currentForm.malnutritionSigns.includes('N/A - No visible signs') 
-                    ? "N/A selected - other options are disabled"
-                    : "Select 'N/A' if no signs are visible, or choose specific symptoms"
+                    ? t('child.na_selected_helper')
+                    : t('child.malnutrition_helper')
                   }
                 </FormHelperText>
               </FormControl>
@@ -618,12 +653,12 @@ const ChildForm = () => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Recent Illnesses"
+                label={t('child.recent_illnesses')}
                 multiline
                 rows={4}
                 value={state.currentForm.recentIllnesses}
                 onChange={(e) => updateFormField('recentIllnesses', e.target.value)}
-                placeholder="Describe any recent illnesses or health concerns (optional)"
+                placeholder={t('child.recent_illnesses_placeholder')}
               />
             </Grid>
           </Grid>
@@ -635,7 +670,7 @@ const ChildForm = () => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Parent/Guardian's Name"
+                label={t('child.parent_guardian')}
                 value={state.currentForm.guardianName}
                 onChange={(e) => updateFormField('guardianName', e.target.value)}
                 error={!!errors.guardianName}
@@ -647,14 +682,14 @@ const ChildForm = () => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Phone Number"
+                label={t('child.contact_number')}
                 type="tel"
                 value={state.currentForm.phone}
                 onChange={(e) => handlePhoneChange(e.target.value)}
                 error={!!errors.phone}
                 helperText={errors.phone || `${state.currentForm.phone.length}/10 digits entered`}
                 required
-                placeholder="Enter 10-digit phone number"
+                placeholder={t('child.form.phone_placeholder')}
                 inputProps={{
                   maxLength: 10,
                   pattern: "[0-9]{10}",
@@ -675,9 +710,7 @@ const ChildForm = () => {
                 }
                 label={
                   <Typography variant="body2">
-                    I hereby provide consent for the collection and processing of my child's health data 
-                    for the purpose of health monitoring and care. I understand that this data will be 
-                    used to improve child health outcomes and will be handled securely.
+                    {t('child.consent_text')}
                   </Typography>
                 }
               />
@@ -777,8 +810,8 @@ const ChildForm = () => {
     <Box sx={{ pb: 10 }}>
       <Card>
         <CardHeader
-          title="Child Health Data Collection"
-          subheader="Complete all sections to register a new child health record"
+          title={t('child.form.title')}
+          subheader={t('child.form.subtitle')}
           action={
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               {isAuthenticated && user && (
@@ -807,8 +840,8 @@ const ChildForm = () => {
           {!isAuthenticated && (
             <Alert severity="info" sx={{ mb: 2 }}>
               <Typography variant="body2">
-                You're working offline. Data will be stored locally. 
-                <strong> Log in with internet connection to enable location tracking and data upload.</strong>
+                {t('child.form.working_offline')} 
+                <strong> {t('child.form.login_required')}</strong>
               </Typography>
             </Alert>
           )}
@@ -855,7 +888,7 @@ const ChildForm = () => {
                 color="error"
                 disabled={isSubmitting}
               >
-                Clear Form
+                {t('child.clear_form')}
               </Button>
             </Box>
             
@@ -864,7 +897,7 @@ const ChildForm = () => {
                 onClick={handleBack}
                 disabled={activeStep === 0 || isSubmitting}
               >
-                Back
+                {t('child.back')}
               </Button>
               
               {activeStep === steps.length - 1 ? (
@@ -875,7 +908,7 @@ const ChildForm = () => {
                   startIcon={<SaveIcon />}
                   size="large"
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Record'}
+                  {isSubmitting ? t('child.saving') : t('child.save_record')}
                 </Button>
               ) : (
                 <Button
@@ -883,7 +916,7 @@ const ChildForm = () => {
                   onClick={handleNext}
                   disabled={isSubmitting}
                 >
-                  Next
+                  {t('child.next')}
                 </Button>
               )}
             </Box>
