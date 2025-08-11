@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Button,
@@ -19,6 +20,7 @@ import {
 } from '@mui/icons-material';
 
 const PhotoCapture = ({ photo, onPhotoCapture, onPhotoClear }) => {
+  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [error, setError] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
@@ -173,7 +175,7 @@ const PhotoCapture = ({ photo, onPhotoCapture, onPhotoClear }) => {
       }}
     >
       <Typography variant="subtitle1" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
-        Child's Photo
+        {t('child.form.photo_title')}
       </Typography>
       
       {photo ? (
@@ -285,7 +287,7 @@ const PhotoCapture = ({ photo, onPhotoCapture, onPhotoClear }) => {
               px: 2
             }}
           >
-            Add Photo
+            {t('child.form.photo_add')}
           </Typography>
           <Typography 
             variant="caption" 
@@ -296,7 +298,7 @@ const PhotoCapture = ({ photo, onPhotoCapture, onPhotoClear }) => {
               px: 1
             }}
           >
-            Tap to capture
+            {t('child.form.photo_capture')}
           </Typography>
           </Box>
         </Box>
@@ -311,7 +313,7 @@ const PhotoCapture = ({ photo, onPhotoCapture, onPhotoClear }) => {
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Add Photo</Typography>
+            <Typography variant="h6">{t('child.form.photo_add')}</Typography>
             <IconButton onClick={closeDialog}>
               <CloseIcon />
             </IconButton>

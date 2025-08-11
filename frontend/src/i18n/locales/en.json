@@ -118,6 +118,11 @@
       "photo_title": "Child's Photo",
       "photo_add": "Add Photo",
       "photo_capture": "Tap to capture",
+      "photo_take": "Take Photo",
+      "photo_gallery": "Choose from Gallery",
+      "photo_delete": "Delete Photo",
+      "photo_camera_error": "Unable to access camera. Please check permissions or use file upload.",
+      "photo_capture_button": "Capture Photo",
       "select_date_of_birth": "Select child's date of birth",
       "malnutrition": {
         "stunting": "Stunting (low height for age)",
