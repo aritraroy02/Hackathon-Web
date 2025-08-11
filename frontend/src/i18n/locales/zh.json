@@ -72,7 +72,32 @@
     "height": "身高",
     "weight": "体重",
     "blood_type": "血型",
-    "notes": "备注"
+    "notes": "备注",
+    "malnutrition_helper": "如果没有可见症状，请选择'N/A'，或选择特定症状",
+    "na_selected_helper": "已选择N/A选项 - 无法选择其他症状",
+    "form": {
+      "malnutrition_signs": "营养不良的可见症状",
+      "malnutrition": {
+        "stunting": "发育迟缓（年龄身高偏低）",
+        "wasting": "消瘦（身高体重偏低）",
+        "underweight": "体重不足（年龄体重偏低）",
+        "visible_ribs": "可见肋骨/脊柱",
+        "swollen_belly": "腹部肿胀",
+        "pale_skin": "皮肤/眼睛苍白",
+        "hair_changes": "头发变化（颜色/质地）",
+        "delayed_development": "发育延迟",
+        "frequent_infections": "频繁感染",
+        "loss_appetite": "食欲不振",
+        "no_visible_signs": "N/A - 无可见症状"
+      }
+    },
+    "steps": {
+      "basic_info": "基本信息",
+      "physical_measurements": "身体测量",
+      "health_assessment": "健康评估",
+      "guardian_info": "监护人信息",
+      "review_submit": "审核提交"
+    }
   },
   "records": {
     "title": "健康记录",

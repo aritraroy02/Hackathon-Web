@@ -72,7 +72,32 @@
     "height": "Taille",
     "weight": "Poids",
     "blood_type": "Groupe Sanguin",
-    "notes": "Notes"
+    "notes": "Notes",
+    "malnutrition_helper": "Sélectionnez 'N/A' si aucun signe n'est visible, ou choisissez des symptômes spécifiques",
+    "na_selected_helper": "Option N/A sélectionnée - aucun autre signe ne peut être choisi",
+    "form": {
+      "malnutrition_signs": "Signes Visibles de Malnutrition",
+      "malnutrition": {
+        "stunting": "Retard de croissance (taille faible pour l'âge)",
+        "wasting": "Émaciation (poids faible pour la taille)",
+        "underweight": "Insuffisance pondérale (poids faible pour l'âge)",
+        "visible_ribs": "Côtes/colonne vertébrale visibles",
+        "swollen_belly": "Ventre gonflé",
+        "pale_skin": "Peau/yeux pâles",
+        "hair_changes": "Changements capillaires (couleur/texture)",
+        "delayed_development": "Développement retardé",
+        "frequent_infections": "Infections fréquentes",
+        "loss_appetite": "Perte d'appétit",
+        "no_visible_signs": "N/A - Aucun signe visible"
+      }
+    },
+    "steps": {
+      "basic_info": "Informations de Base",
+      "physical_measurements": "Mesures Physiques",
+      "health_assessment": "Évaluation de Santé",
+      "guardian_info": "Informations du Tuteur",
+      "review_submit": "Révision et Soumission"
+    }
   },
   "records": {
     "title": "Dossiers de Santé",

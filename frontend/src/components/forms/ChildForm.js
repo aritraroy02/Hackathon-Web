@@ -78,7 +78,8 @@ const ChildForm = () => {
     dayjs.locale('en'); // Fallback to English
   }
   
-  const malnutritionOptions = [
+  // Make malnutrition options reactive to language changes
+  const malnutritionOptions = React.useMemo(() => [
     t('child.form.malnutrition.stunting'),
     t('child.form.malnutrition.wasting'), 
     t('child.form.malnutrition.underweight'),
@@ -90,15 +91,16 @@ const ChildForm = () => {
     t('child.form.malnutrition.frequent_infections'),
     t('child.form.malnutrition.loss_appetite'),
     t('child.form.malnutrition.no_visible_signs')
-  ];
+  ], [t, i18n.language]);
 
-  const steps = [
+  // Make steps reactive to language changes
+  const steps = React.useMemo(() => [
     t('child.steps.basic_info'),
     t('child.steps.physical_measurements'),
     t('child.steps.health_assessment'),
     t('child.steps.guardian_info'),
     t('child.steps.review_submit')
-  ];
+  ], [t, i18n.language]);
 
   const { 
     state, 
@@ -192,6 +194,98 @@ const ChildForm = () => {
     }
   }, [state.currentForm.childName, updateFormField]);
 
+  // Handle malnutrition signs translation when language changes
+  useEffect(() => {
+    if (state.currentForm.malnutritionSigns && state.currentForm.malnutritionSigns.length > 0) {
+      // Create translation mapping from all languages to current language
+      const allTranslations = {
+        // English (base)
+        'Stunting (low height for age)': t('child.form.malnutrition.stunting'),
+        'Wasting (low weight for height)': t('child.form.malnutrition.wasting'),
+        'Underweight (low weight for age)': t('child.form.malnutrition.underweight'),
+        'Visible ribs/spine': t('child.form.malnutrition.visible_ribs'),
+        'Swollen belly': t('child.form.malnutrition.swollen_belly'),
+        'Pale skin/eyes': t('child.form.malnutrition.pale_skin'),
+        'Hair changes (color/texture)': t('child.form.malnutrition.hair_changes'),
+        'Delayed development': t('child.form.malnutrition.delayed_development'),
+        'Frequent infections': t('child.form.malnutrition.frequent_infections'),
+        'Loss of appetite': t('child.form.malnutrition.loss_appetite'),
+        'N/A - No visible signs': t('child.form.malnutrition.no_visible_signs'),
+        
+        // Spanish
+        'Retraso en el crecimiento (baja estatura para la edad)': t('child.form.malnutrition.stunting'),
+        'Emaciación (bajo peso para la estatura)': t('child.form.malnutrition.wasting'),
+        'Bajo peso (bajo peso para la edad)': t('child.form.malnutrition.underweight'),
+        'Costillas/columna visibles': t('child.form.malnutrition.visible_ribs'),
+        'Abdomen hinchado': t('child.form.malnutrition.swollen_belly'),
+        'Piel/ojos pálidos': t('child.form.malnutrition.pale_skin'),
+        'Cambios en el cabello (color/textura)': t('child.form.malnutrition.hair_changes'),
+        'Desarrollo retrasado': t('child.form.malnutrition.delayed_development'),
+        'Infecciones frecuentes': t('child.form.malnutrition.frequent_infections'),
+        'Pérdida de apetito': t('child.form.malnutrition.loss_appetite'),
+        'N/A - Sin signos visibles': t('child.form.malnutrition.no_visible_signs'),
+        
+        // French
+        'Retard de croissance (taille faible pour l\'âge)': t('child.form.malnutrition.stunting'),
+        'Émaciation (poids faible pour la taille)': t('child.form.malnutrition.wasting'),
+        'Insuffisance pondérale (poids faible pour l\'âge)': t('child.form.malnutrition.underweight'),
+        'Côtes/colonne vertébrale visibles': t('child.form.malnutrition.visible_ribs'),
+        'Ventre gonflé': t('child.form.malnutrition.swollen_belly'),
+        'Peau/yeux pâles': t('child.form.malnutrition.pale_skin'),
+        'Changements capillaires (couleur/texture)': t('child.form.malnutrition.hair_changes'),
+        'Développement retardé': t('child.form.malnutrition.delayed_development'),
+        'Infections fréquentes': t('child.form.malnutrition.frequent_infections'),
+        'Perte d\'appétit': t('child.form.malnutrition.loss_appetite'),
+        'N/A - Aucun signe visible': t('child.form.malnutrition.no_visible_signs'),
+        
+        // Hindi
+        'स्टंटिंग (उम्र के अनुपात में कम ऊंचाई)': t('child.form.malnutrition.stunting'),
+        'वेस्टिंग (ऊंचाई के अनुपात में कम वजन)': t('child.form.malnutrition.wasting'),
+        'कम वजन (उम्र के अनुपात में कम वजन)': t('child.form.malnutrition.underweight'),
+        'दिखाई देने वाली पसलियां/रीढ़': t('child.form.malnutrition.visible_ribs'),
+        'सूजा हुआ पेट': t('child.form.malnutrition.swollen_belly'),
+        'पीली त्वचा/आंखें': t('child.form.malnutrition.pale_skin'),
+        'बालों में परिवर्तन (रंग/बनावट)': t('child.form.malnutrition.hair_changes'),
+        'विकास में देरी': t('child.form.malnutrition.delayed_development'),
+        'बार-बार संक्रमण': t('child.form.malnutrition.frequent_infections'),
+        'भूख में कमी': t('child.form.malnutrition.loss_appetite'),
+        'कोई दिखाई देने वाले लक्षण नहीं': t('child.form.malnutrition.no_visible_signs'),
+        
+        // Chinese
+        '发育迟缓（年龄身高偏低）': t('child.form.malnutrition.stunting'),
+        '消瘦（身高体重偏低）': t('child.form.malnutrition.wasting'),
+        '体重不足（年龄体重偏低）': t('child.form.malnutrition.underweight'),
+        '可见肋骨/脊柱': t('child.form.malnutrition.visible_ribs'),
+        '腹部肿胀': t('child.form.malnutrition.swollen_belly'),
+        '皮肤/眼睛苍白': t('child.form.malnutrition.pale_skin'),
+        '头发变化（颜色/质地）': t('child.form.malnutrition.hair_changes'),
+        '发育延迟': t('child.form.malnutrition.delayed_development'),
+        '频繁感染': t('child.form.malnutrition.frequent_infections'),
+        '食欲不振': t('child.form.malnutrition.loss_appetite'),
+        'N/A - 无可见症状': t('child.form.malnutrition.no_visible_signs')
+      };
+
+      // Update malnutrition signs to current language
+      const updatedSigns = state.currentForm.malnutritionSigns.map(sign => {
+        // If it's already in current language, keep it
+        if (malnutritionOptions.includes(sign)) {
+          return sign;
+        }
+        // Find translation or keep original
+        return allTranslations[sign] || sign;
+      });
+
+      // Only update if there are changes
+      const hasChanges = updatedSigns.some((sign, index) => 
+        sign !== state.currentForm.malnutritionSigns[index]
+      );
+
+      if (hasChanges) {
+        updateFormField('malnutritionSigns', updatedSigns);
+      }
+    }
+  }, [i18n.language, t, malnutritionOptions, state.currentForm.malnutritionSigns, updateFormField]);
+
   const validateStep = (step) => {
     const newErrors = {};
     
@@ -281,7 +375,7 @@ const ChildForm = () => {
   };
 
   const handleMalnutritionChange = (selectedValues) => {
-    const naOption = 'N/A - No visible signs';
+    const naOption = t('child.form.malnutrition.no_visible_signs');
     
     if (selectedValues.includes(naOption)) {
       // If N/A is selected, only keep N/A
@@ -628,10 +722,11 @@ const ChildForm = () => {
                   )}
                 >
                   {malnutritionOptions.map((option) => {
-                    const isNASelected = state.currentForm.malnutritionSigns.includes('N/A - No visible signs');
-                    const isNAOption = option === 'N/A - No visible signs';
+                    const naOption = t('child.form.malnutrition.no_visible_signs');
+                    const isNASelected = state.currentForm.malnutritionSigns.includes(naOption);
+                    const isNAOption = option === naOption;
                     const hasOtherSelections = state.currentForm.malnutritionSigns.length > 0 && 
-                                              !state.currentForm.malnutritionSigns.includes('N/A - No visible signs');
+                                              !state.currentForm.malnutritionSigns.includes(naOption);
                     
                     const isDisabled = (isNASelected && !isNAOption) || (hasOtherSelections && isNAOption);
                     
@@ -651,7 +746,7 @@ const ChildForm = () => {
                   })}
                 </Select>
                 <FormHelperText>
-                  {state.currentForm.malnutritionSigns.includes('N/A - No visible signs') 
+                  {state.currentForm.malnutritionSigns.includes(t('child.form.malnutrition.no_visible_signs')) 
                     ? t('child.na_selected_helper')
                     : t('child.malnutrition_helper')
                   }

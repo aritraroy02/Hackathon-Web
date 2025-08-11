@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Card,
@@ -51,9 +52,82 @@ import { uploadRecordsBatch } from '../../utils/uploadService';
 import { checkInternetConnectivity } from '../../utils/networkUtils';
 
 const RecordsList = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { state, dispatch, showNotification, setUploading, setUploadProgress, markRecordUploaded, loadMongoRecords } = useAppContext();
   const { isAuthenticated, user } = useAuth();
+  
+  // Function to translate malnutrition signs to current language
+  const translateMalnutritionSign = useCallback((sign) => {
+    const translationMap = {
+      // English (base)
+      'Stunting (low height for age)': t('child.form.malnutrition.stunting'),
+      'Wasting (low weight for height)': t('child.form.malnutrition.wasting'),
+      'Underweight (low weight for age)': t('child.form.malnutrition.underweight'),
+      'Visible ribs/spine': t('child.form.malnutrition.visible_ribs'),
+      'Swollen belly': t('child.form.malnutrition.swollen_belly'),
+      'Pale skin/eyes': t('child.form.malnutrition.pale_skin'),
+      'Hair changes (color/texture)': t('child.form.malnutrition.hair_changes'),
+      'Delayed development': t('child.form.malnutrition.delayed_development'),
+      'Frequent infections': t('child.form.malnutrition.frequent_infections'),
+      'Loss of appetite': t('child.form.malnutrition.loss_appetite'),
+      'N/A - No visible signs': t('child.form.malnutrition.no_visible_signs'),
+      
+      // Spanish
+      'Retraso en el crecimiento (baja estatura para la edad)': t('child.form.malnutrition.stunting'),
+      'Emaciación (bajo peso para la estatura)': t('child.form.malnutrition.wasting'),
+      'Bajo peso (bajo peso para la edad)': t('child.form.malnutrition.underweight'),
+      'Costillas/columna visibles': t('child.form.malnutrition.visible_ribs'),
+      'Abdomen hinchado': t('child.form.malnutrition.swollen_belly'),
+      'Piel/ojos pálidos': t('child.form.malnutrition.pale_skin'),
+      'Cambios en el cabello (color/textura)': t('child.form.malnutrition.hair_changes'),
+      'Desarrollo retrasado': t('child.form.malnutrition.delayed_development'),
+      'Infecciones frecuentes': t('child.form.malnutrition.frequent_infections'),
+      'Pérdida de apetito': t('child.form.malnutrition.loss_appetite'),
+      'N/A - Sin signos visibles': t('child.form.malnutrition.no_visible_signs'),
+      
+      // French
+      'Retard de croissance (taille faible pour l\'âge)': t('child.form.malnutrition.stunting'),
+      'Émaciation (poids faible pour la taille)': t('child.form.malnutrition.wasting'),
+      'Insuffisance pondérale (poids faible pour l\'âge)': t('child.form.malnutrition.underweight'),
+      'Côtes/colonne vertébrale visibles': t('child.form.malnutrition.visible_ribs'),
+      'Ventre gonflé': t('child.form.malnutrition.swollen_belly'),
+      'Peau/yeux pâles': t('child.form.malnutrition.pale_skin'),
+      'Changements capillaires (couleur/texture)': t('child.form.malnutrition.hair_changes'),
+      'Développement retardé': t('child.form.malnutrition.delayed_development'),
+      'Infections fréquentes': t('child.form.malnutrition.frequent_infections'),
+      'Perte d\'appétit': t('child.form.malnutrition.loss_appetite'),
+      'N/A - Aucun signe visible': t('child.form.malnutrition.no_visible_signs'),
+      
+      // Hindi
+      'स्टंटिंग (उम्र के अनुपात में कम ऊंचाई)': t('child.form.malnutrition.stunting'),
+      'वेस्टिंग (ऊंचाई के अनुपात में कम वजन)': t('child.form.malnutrition.wasting'),
+      'कम वजन (उम्र के अनुपात में कम वजन)': t('child.form.malnutrition.underweight'),
+      'दिखाई देने वाली पसलियां/रीढ़': t('child.form.malnutrition.visible_ribs'),
+      'सूजा हुआ पेट': t('child.form.malnutrition.swollen_belly'),
+      'पीली त्वचा/आंखें': t('child.form.malnutrition.pale_skin'),
+      'बालों में परिवर्तन (रंग/बनावट)': t('child.form.malnutrition.hair_changes'),
+      'विकास में देरी': t('child.form.malnutrition.delayed_development'),
+      'बार-बार संक्रमण': t('child.form.malnutrition.frequent_infections'),
+      'भूख में कमी': t('child.form.malnutrition.loss_appetite'),
+      'कोई दिखाई देने वाले लक्षण नहीं': t('child.form.malnutrition.no_visible_signs'),
+      
+      // Chinese
+      '发育迟缓（年龄身高偏低）': t('child.form.malnutrition.stunting'),
+      '消瘦（身高体重偏低）': t('child.form.malnutrition.wasting'),
+      '体重不足（年龄体重偏低）': t('child.form.malnutrition.underweight'),
+      '可见肋骨/脊柱': t('child.form.malnutrition.visible_ribs'),
+      '腹部肿胀': t('child.form.malnutrition.swollen_belly'),
+      '皮肤/眼睛苍白': t('child.form.malnutrition.pale_skin'),
+      '头发变化（颜色/质地）': t('child.form.malnutrition.hair_changes'),
+      '发育延迟': t('child.form.malnutrition.delayed_development'),
+      '频繁感染': t('child.form.malnutrition.frequent_infections'),
+      '食欲不振': t('child.form.malnutrition.loss_appetite'),
+      'N/A - 无可见症状': t('child.form.malnutrition.no_visible_signs')
+    };
+    
+    return translationMap[sign] || sign;
+  }, [t]);
   
   const [records, setRecords] = useState([]);
   const [filteredRecords, setFilteredRecords] = useState([]);
@@ -781,7 +855,12 @@ const RecordsList = () => {
                           ? [selectedRecord.malnutritionSigns] 
                           : []
                       ).map((sign, index) => (
-                        <Chip key={index} label={sign} size="small" variant="outlined" />
+                        <Chip 
+                          key={index} 
+                          label={translateMalnutritionSign(sign)} 
+                          size="small" 
+                          variant="outlined" 
+                        />
                       ))}
                       {(!selectedRecord.malnutritionSigns || 
                         (Array.isArray(selectedRecord.malnutritionSigns) && selectedRecord.malnutritionSigns.length === 0)) && (
