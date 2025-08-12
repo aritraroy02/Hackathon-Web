@@ -1,3 +1,35 @@
+/* Global Responsive Utilities */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 2.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    padding: 0 3rem;
+  }
+}
+
 /* App Component Styles */
 .App {
   min-height: 100vh;
@@ -275,8 +307,67 @@
   background-color: #b91c1c;
 }
 
-/* Responsive Design */
+/* Responsive Design - Enhanced Mobile Support */
+@media (max-width: 1200px) {
+  /* Large tablets and small desktops */
+  .main-content {
+    padding: 1.5rem 0;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .charts-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 992px) {
+  /* Tablets */
+  .container {
+    max-width: none;
+    padding: 0 2rem;
+  }
+  
+  .navbar-brand {
+    font-size: 1.25rem;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+  
+  .charts-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
+  /* Mobile devices */
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .navbar {
+    padding: 0.75rem 0;
+  }
+  
+  .navbar-brand {
+    font-size: 1.125rem;
+  }
+  
+  .navbar-nav {
+    display: none;
+  }
+  
+  .main-content {
+    padding: 1rem 0;
+  }
+  
   .home h1 {
     font-size: 2rem;
   }
@@ -289,25 +380,149 @@
   .dashboard-card,
   .charts-container,
   .data-table-container {
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
   
-  .navbar-nav {
-    gap: 1rem;
+  /* Sidebar adjustments */
+  .sidebar {
+    width: 280px;
+  }
+  
+  .sidebar-header {
+    padding: 1.25rem;
+  }
+  
+  .sidebar-nav-item {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Small mobile devices */
+  .container {
+    padding: 0 0.75rem;
+  }
+  
+  .navbar {
+    padding: 0.5rem 0;
+  }
+  
+  .navbar-brand {
+    font-size: 1rem;
+    flex-wrap: wrap;
   }
   
   .main-content {
-    padding: 1rem 0;
+    padding: 0.75rem 0;
+  }
+  
+  .sidebar {
+    width: 260px;
+  }
+  
+  .dashboard-card,
+  .charts-container,
+  .data-table-container {
+    padding: 1rem;
   }
 }
 
 @media (max-width: 480px) {
-  .home {
-    padding: 0 15px;
+  /* Extra small mobile devices */
+  .container {
+    padding: 0 0.5rem;
   }
   
-  .navbar-nav {
-    display: none;
+  .navbar {
+    padding: 0.5rem 0;
+  }
+  
+  .navbar-left {
+    gap: 0.5rem;
+  }
+  
+  .navbar-brand {
+    font-size: 0.9rem;
+    line-height: 1.2;
+  }
+  
+  .hamburger-btn {
+    padding: 0.375rem;
+  }
+  
+  .main-content {
+    padding: 0.5rem 0;
+  }
+  
+  .sidebar {
+    width: 240px;
+  }
+  
+  .sidebar-header {
+    padding: 1rem;
+  }
+  
+  .sidebar-header h2 {
+    font-size: 1.125rem;
+  }
+  
+  .sidebar-nav-item {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .home {
+    padding: 0 0.5rem;
+  }
+  
+  .home h1 {
+    font-size: 1.75rem;
+  }
+  
+  .dashboard-card,
+  .charts-container,
+  .data-table-container {
+    padding: 0.875rem;
+    border-radius: 0.5rem;
+  }
+}
+
+@media (max-width: 375px) {
+  /* iPhone SE and similar small screens */
+  .navbar-brand {
+    font-size: 0.8rem;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .hamburger-btn {
+    padding: 0.25rem;
+  }
+  
+  .hamburger-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .sidebar {
+    width: 220px;
+  }
+  
+  .main-content {
+    padding: 0.25rem 0;
+  }
+  
+  .home h1 {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-card,
+  .charts-container,
+  .data-table-container {
+    padding: 0.75rem;
   }
 }
 
@@ -1221,6 +1436,63 @@
   font-size: 0.875rem;
   color: #6b7280;
   text-align: center;
+}
+
+/* About Page Styles */
+.about-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  min-height: calc(100vh - 70px);
+}
+
+.about-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.about-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.about-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.about-content p {
+  line-height: 1.7;
+  color: #374151;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.about-content ul {
+  margin-bottom: 2rem;
+  padding-left: 1.5rem;
+}
+
+.about-content li {
+  line-height: 1.6;
+  color: #374151;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
 }
 
 /* Child Lookup Styles */

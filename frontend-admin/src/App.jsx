@@ -42,10 +42,10 @@ function Navigation() {
         <div className="container">
           <div className="navbar-left">
             <button className="hamburger-btn" onClick={toggleSidebar}>
-              <Menu size={24} />
+              <Menu size={window.innerWidth <= 480 ? 20 : 24} />
             </button>
             <Link to="/" className="navbar-brand">
-              Child Health Dashboard
+              {window.innerWidth <= 480 ? 'Child Health' : 'Child Health Dashboard'}
             </Link>
           </div>
           <ul className="navbar-nav">
