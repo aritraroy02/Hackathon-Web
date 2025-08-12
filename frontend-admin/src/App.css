@@ -74,6 +74,35 @@
   padding: 2rem 0;
 }
 
+/* Children List Full Width and Height */
+.children-list {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 2rem;
+  box-sizing: border-box;
+  min-height: calc(100vh - 70px); /* Full height minus navbar */
+  display: flex;
+  flex-direction: column;
+}
+
+.children-grid {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 1rem;
+  flex: 1; /* Take remaining space */
+}
+
+.child-card {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  background: white;
+  box-sizing: border-box;
+}
+
 /* Home Component */
 .home {
   max-width: 1200px;
@@ -378,12 +407,6 @@
   flex: 1;
 }
 
-/* Children List Styles */
-.children-list {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
 
 .page-header {
   margin-bottom: 2rem;
@@ -471,9 +494,10 @@
 }
 
 .children-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 1rem;
   margin-bottom: 2rem;
 }
 

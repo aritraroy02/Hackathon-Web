@@ -782,7 +782,7 @@ const MalnutritionAnalysis = () => {
               <AlertTriangle size={20} />
               Critical Cases Details
             </h3>
-            <p className="chart-subtitle">Children with multiple malnutrition symptoms (>2 symptoms)</p>
+            <p className="chart-subtitle">Children with multiple malnutrition symptoms (&gt;2 symptoms)</p>
           </div>
           <div className="critical-cases-list">
             {data?.criticalCasesDetails?.slice(0, 10).map((child, index) => (
