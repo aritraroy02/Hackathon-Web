@@ -3,258 +3,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { AlertTriangle, Users, TrendingUp, ArrowLeft, Download, Filter, Calendar, MapPin, Eye, Activity } from 'lucide-react';
 import { apiService } from '../services/api';
 import './Dashboard.css';
-
-// Add custom styles for the malnutrition analysis page
-const styles = `
-.malnutrition-analysis {
-  padding: 20px;
-}
-
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  color: #64748b;
-  text-decoration: none;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  margin-bottom: 20px;
-}
-
-.back-button:hover {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-.filter-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-}
-
-.filter-select {
-  border: none;
-  background: transparent;
-  outline: none;
-  color: #475569;
-}
-
-.chart-container.large {
-  grid-column: span 2;
-}
-
-.critical-cases-list {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.critical-case-item {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
-
-.case-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.child-info {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.child-name {
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.health-id, .age {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.case-meta {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.location, .date {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.symptoms-list strong {
-  color: #1f2937;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.symptoms-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.symptom-tag {
-  background: #ef4444;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.show-more {
-  text-align: center;
-  padding: 16px;
-  color: #6b7280;
-  font-style: italic;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.modal-header h3 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #6b7280;
-}
-
-.close-btn:hover {
-  color: #374151;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.symptom-stats {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-item .label {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.stat-item .value {
-  font-weight: 600;
-  color: #1f2937;
-  font-size: 18px;
-}
-
-.affected-children h4 {
-  margin-bottom: 12px;
-  color: #1f2937;
-}
-
-.children-list {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.child-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  margin-bottom: 6px;
-}
-
-.child-item .name {
-  font-weight: 500;
-  color: #1f2937;
-}
-
-.child-item .details {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.more-indicator {
-  text-align: center;
-  color: #6b7280;
-  font-style: italic;
-  margin-top: 12px;
-}
-`;
-
-// Inject styles
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.type = 'text/css';
-  styleSheet.innerText = styles;
-  document.head.appendChild(styleSheet);
-}
+import './MalnutritionAnalysis.css';
 
 const MalnutritionAnalysis = () => {
   const [data, setData] = useState(null);
@@ -659,23 +408,28 @@ const MalnutritionAnalysis = () => {
             </h3>
             <p className="chart-subtitle">Top 10 most common symptoms (click bars for details)</p>
           </div>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width="100%" height={window.innerWidth <= 768 ? 350 : 400}>
             <BarChart 
               data={symptomBarData} 
-              margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+              margin={{ 
+                top: 20, 
+                right: window.innerWidth <= 480 ? 10 : 30, 
+                left: window.innerWidth <= 480 ? 10 : 20, 
+                bottom: window.innerWidth <= 768 ? 80 : 100 
+              }}
               onClick={(data) => data && handleSymptomClick(data.activePayload?.[0]?.payload)}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis 
                 dataKey="name" 
                 stroke="#64748b"
-                fontSize={11}
+                fontSize={window.innerWidth <= 480 ? 9 : 11}
                 angle={-45}
                 textAnchor="end"
-                height={100}
+                height={window.innerWidth <= 768 ? 80 : 100}
                 interval={0}
               />
-              <YAxis stroke="#64748b" fontSize={12} />
+              <YAxis stroke="#64748b" fontSize={window.innerWidth <= 480 ? 10 : 12} />
               <Tooltip 
                 formatter={(value, name, props) => [
                   `${value} children (${props.payload.percentage}%)`, 
@@ -711,11 +465,16 @@ const MalnutritionAnalysis = () => {
             </h3>
             <p className="chart-subtitle">Malnutrition prevalence by age group</p>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={ageWiseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={window.innerWidth <= 768 ? 280 : 300}>
+            <BarChart data={ageWiseData} margin={{ 
+              top: 20, 
+              right: window.innerWidth <= 480 ? 10 : 30, 
+              left: window.innerWidth <= 480 ? 10 : 20, 
+              bottom: 5 
+            }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="ageGroup" stroke="#64748b" fontSize={12} />
-              <YAxis stroke="#64748b" fontSize={12} />
+              <XAxis dataKey="ageGroup" stroke="#64748b" fontSize={window.innerWidth <= 480 ? 10 : 12} />
+              <YAxis stroke="#64748b" fontSize={window.innerWidth <= 480 ? 10 : 12} />
               <Tooltip 
                 formatter={(value, name) => {
                   if (name === 'total') return [`${value} children`, 'Total Children'];
@@ -746,18 +505,23 @@ const MalnutritionAnalysis = () => {
             </h3>
             <p className="chart-subtitle">Malnutrition cases by state</p>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={locationData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+          <ResponsiveContainer width="100%" height={window.innerWidth <= 768 ? 280 : 300}>
+            <BarChart data={locationData} margin={{ 
+              top: 20, 
+              right: window.innerWidth <= 480 ? 10 : 30, 
+              left: window.innerWidth <= 480 ? 10 : 20, 
+              bottom: window.innerWidth <= 768 ? 50 : 60 
+            }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis 
                 dataKey="state" 
                 stroke="#64748b" 
-                fontSize={11}
+                fontSize={window.innerWidth <= 480 ? 9 : 11}
                 angle={-45}
                 textAnchor="end"
-                height={80}
+                height={window.innerWidth <= 768 ? 60 : 80}
               />
-              <YAxis stroke="#64748b" fontSize={12} />
+              <YAxis stroke="#64748b" fontSize={window.innerWidth <= 480 ? 10 : 12} />
               <Tooltip 
                 formatter={(value, name) => {
                   if (name === 'withSymptoms') return [`${value} children`, 'With Symptoms'];
